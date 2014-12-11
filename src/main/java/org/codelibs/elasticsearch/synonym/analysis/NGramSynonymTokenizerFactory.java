@@ -69,6 +69,11 @@ public final class NGramSynonymTokenizerFactory extends
         Analyzer analyzer = getAnalyzer(ignoreCase);
 
         try (Reader rulesReader = getSynonymReader(env, settings)) {
+            if (rulesReader instanceof FastStringReader
+                    && ((FastStringReader) rulesReader).length() == 0) {
+                synonymMap = null;
+                return;
+            }
             SynonymMap.Builder parser = null;
 
             if ("wordnet".equalsIgnoreCase(settings.get("format"))) {

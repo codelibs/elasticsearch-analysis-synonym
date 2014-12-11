@@ -1,7 +1,8 @@
 package org.codelibs.elasticsearch.synonym;
 
-import static org.codelibs.elasticsearch.runner.ElasticsearchClusterRunner.*;
-import static org.junit.Assert.*;
+import static org.codelibs.elasticsearch.runner.ElasticsearchClusterRunner.newConfigs;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -16,6 +17,10 @@ import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.common.settings.ImmutableSettings.Builder;
+import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.common.xcontent.XContentFactory;
+import org.elasticsearch.index.query.MatchQueryBuilder.Type;
+import org.elasticsearch.index.query.QueryBuilders;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -44,7 +49,7 @@ public class SynonymPluginTest {
             String confPath = runner.getNode(i).settings().get("path.conf");
             synonymFiles[i] = new File(confPath, "synonym.txt");
             updateDictionary(synonymFiles[i],
-                    "あい,かき,さしす,たちつて,なにぬねの¥nうえお,くけこ,すせ");
+                    "あい,かき,さしす,たちつて,なにぬねの\nうえお,くけこ,すせ");
         }
 
         runner.ensureYellow();
@@ -76,36 +81,42 @@ public class SynonymPluginTest {
                 + "\"ngramSynonym\":{\"type\":\"ngram_synonym\",\"n\":\"2\",\"synonyms_path\":\"synonym.txt\"}"
                 + "},"//
                 + "\"analyzer\":{"
-                + "\"my_analyzer\":{\"type\":\"custom\",\"tokenizer\":\"ngramSynonym\"}"
+                + "\"ngram_synonym_analyzer\":{\"type\":\"custom\",\"tokenizer\":\"ngramSynonym\"}"
                 + "}"//
                 + "}}}";
         runner.createIndex(index,
                 ImmutableSettings.builder().loadFromSource(indexSettings)
                         .build());
 
-        int numOfDocs = 10;
+        // create a mapping
+        final XContentBuilder mappingBuilder = XContentFactory.jsonBuilder()//
+                .startObject()//
+                .startObject(type)//
+                .startObject("properties")//
+
+                // id
+                .startObject("id")//
+                .field("type", "string")//
+                .field("index", "not_analyzed")//
+                .endObject()//
+
+                // msg1
+                .startObject("msg1")//
+                .field("type", "string")//
+                .field("analyzer", "ngram_synonym_analyzer")//
+                .endObject()//
+
+                .endObject()//
+                .endObject()//
+                .endObject();
+        runner.createMapping(index, type, mappingBuilder);
+
+        int numOfDocs = 1000;
         for (int i = 1; i <= numOfDocs; i++) {
-            String msg = null;
-            switch (i % 5) {
-            case 0:
-                msg = "あいうえお";
-                break;
-            case 1:
-                msg = "かきくけこ";
-                break;
-            case 2:
-                msg = "さしすせそ";
-                break;
-            case 3:
-                msg = "たちつてと";
-                break;
-            case 4:
-                msg = "なにぬねの";
-                break;
-            }
             final IndexResponse indexResponse1 = runner.insert(index, type,
-                    String.valueOf(i), "{\"msg\":\"" + msg + "\", \"id\":\""
-                            + i + "\"}");
+                    String.valueOf(i),
+                    "{\"msg1\":\"あいうえお\", \"msg2\":\"あいうえお\", \"id\":\"" + i
+                            + "\"}");
             assertTrue(indexResponse1.isCreated());
         }
         runner.refresh();
@@ -114,6 +125,13 @@ public class SynonymPluginTest {
         {
             final SearchResponse searchResponse = runner.search(index, type,
                     null, null, 0, 10);
+            assertEquals(numOfDocs, searchResponse.getHits().getTotalHits());
+        }
+
+        {
+            final SearchResponse searchResponse = runner.search(index, type,
+                    QueryBuilders.matchQuery("msg1", "あい").type(Type.PHRASE),
+                    null, 0, 1000);
             assertEquals(numOfDocs, searchResponse.getHits().getTotalHits());
         }
 
