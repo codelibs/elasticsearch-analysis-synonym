@@ -85,6 +85,17 @@ public final class NGramSynonymTokenizerFactory extends
             }
 
             synonymMap = parser.build();
+            if (synonymMap.fst == null) {
+                if (settings.getAsArray("synonyms", null) != null) {
+                    logger.warn("synonyms values are empty.");
+                } else if (settings.get("synonyms_path") != null) {
+                    logger.warn("synonyms_path[{}] is empty.",
+                            settings.get("synonyms_path"));
+                } else {
+                    logger.warn("No synonym data.");
+                }
+                synonymMap = null;
+            }
         } catch (Exception e) {
             throw new ElasticsearchIllegalArgumentException(
                     "failed to build synonyms", e);
