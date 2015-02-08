@@ -299,7 +299,8 @@ public final class NGramSynonymTokenizer extends Tokenizer {
     }
 
     @Override
-    public void end() {
+    public void end() throws IOException {
+        super.end();
         offsetAttr.setOffset(finalOffset, finalOffset);
     }
 
@@ -310,6 +311,7 @@ public final class NGramSynonymTokenizer extends Tokenizer {
         readBufferIndex = BUFFER_SIZE;
         readBufferLen = 0;
         ch = 0;
+        blkStart = 0;
         nextBlkStart = 0;
     }
 
