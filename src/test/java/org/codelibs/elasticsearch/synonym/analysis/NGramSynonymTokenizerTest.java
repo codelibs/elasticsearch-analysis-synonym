@@ -1436,13 +1436,25 @@ public class NGramSynonymTokenizerTest {
 
     protected TokenStreamComponents createComponents(String fieldName,
         Reader reader) {
-      final Tokenizer source = new NGramSynonymTokenizer(reader, n, delimiters, expand, true, synonyms);
+            final Tokenizer source = new NGramSynonymTokenizer(reader, n,
+                    delimiters, expand, true, new SynonymLoader(null, null,
+                            expand, true) {
+                        @Override
+                        public SynonymMap getSynonymMap() {
+                            return synonyms;
+                        }
+
+                        @Override
+                        protected void createSynonymMap(boolean reload) {
+                            // nothing
+                        }
+                    });
       return new TokenStreamComponents(source);
     }
     
     private SynonymMap getSynonymMap(String synonyms){
       if(synonyms != null){
-        SolrSynonymParser parser = new SolrSynonymParser(true, true, NGramSynonymTokenizerFactory.getAnalyzer(true));
+        SolrSynonymParser parser = new SolrSynonymParser(true, true, SynonymLoader.getAnalyzer(true));
         try {
           parser.parse(new StringReader(synonyms.replace('/', '\n')));
           return parser.build();

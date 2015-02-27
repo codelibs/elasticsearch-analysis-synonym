@@ -18,25 +18,14 @@ package org.codelibs.elasticsearch.synonym.analysis;
  */
 
 import java.io.Reader;
-import java.util.List;
 
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.core.KeywordTokenizer;
-import org.apache.lucene.analysis.core.LowerCaseFilter;
-import org.apache.lucene.analysis.synonym.SolrSynonymParser;
-import org.apache.lucene.analysis.synonym.SynonymMap;
-import org.apache.lucene.analysis.synonym.WordnetSynonymParser;
-import org.elasticsearch.ElasticsearchIllegalArgumentException;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.inject.assistedinject.Assisted;
-import org.elasticsearch.common.io.FastStringReader;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.env.Environment;
 import org.elasticsearch.index.Index;
 import org.elasticsearch.index.analysis.AbstractTokenizerFactory;
-import org.elasticsearch.index.analysis.Analysis;
 import org.elasticsearch.index.settings.IndexSettings;
 
 /**
@@ -53,7 +42,7 @@ public final class NGramSynonymTokenizerFactory extends
 
     private final boolean expand;
 
-    private SynonymMap synonymMap;
+    private SynonymLoader synonymLoader = null;
 
     @Inject
     public NGramSynonymTokenizerFactory(Index index,
@@ -66,75 +55,22 @@ public final class NGramSynonymTokenizerFactory extends
                 NGramSynonymTokenizer.DEFAULT_DELIMITERS);
         expand = settings.getAsBoolean("expand", true);
 
-        Analyzer analyzer = getAnalyzer(ignoreCase);
-
-        try (Reader rulesReader = getSynonymReader(env, settings)) {
-            if (rulesReader instanceof FastStringReader
-                    && ((FastStringReader) rulesReader).length() == 0) {
-                synonymMap = null;
-                return;
-            }
-            SynonymMap.Builder parser = null;
-
-            if ("wordnet".equalsIgnoreCase(settings.get("format"))) {
-                parser = new WordnetSynonymParser(true, expand, analyzer);
-                ((WordnetSynonymParser) parser).parse(rulesReader);
+        synonymLoader = new SynonymLoader(env, settings, expand, ignoreCase);
+        if (synonymLoader.getSynonymMap() == null) {
+            if (settings.getAsArray("synonyms", null) != null) {
+                logger.warn("synonyms values are empty.");
+            } else if (settings.get("synonyms_path") != null) {
+                logger.warn("synonyms_path[{}] is empty.",
+                        settings.get("synonyms_path"));
             } else {
-                parser = new SolrSynonymParser(true, expand, analyzer);
-                ((SolrSynonymParser) parser).parse(rulesReader);
+                logger.warn("No synonym data.");
             }
-
-            synonymMap = parser.build();
-            if (synonymMap.fst == null) {
-                if (settings.getAsArray("synonyms", null) != null) {
-                    logger.warn("synonyms values are empty.");
-                } else if (settings.get("synonyms_path") != null) {
-                    logger.warn("synonyms_path[{}] is empty.",
-                            settings.get("synonyms_path"));
-                } else {
-                    logger.warn("No synonym data.");
-                }
-                synonymMap = null;
-            }
-        } catch (Exception e) {
-            throw new ElasticsearchIllegalArgumentException(
-                    "failed to build synonyms", e);
         }
-    }
-
-    private Reader getSynonymReader(Environment env, Settings settings) {
-        if (settings.getAsArray("synonyms", null) != null) {
-            List<String> rules = Analysis
-                    .getWordList(env, settings, "synonyms");
-            StringBuilder sb = new StringBuilder();
-            for (String line : rules) {
-                sb.append(line).append(System.getProperty("line.separator"));
-            }
-            return new FastStringReader(sb.toString());
-        } else if (settings.get("synonyms_path") != null) {
-            return Analysis.getReaderFromFile(env, settings, "synonyms_path");
-        } else {
-            return new FastStringReader("");
-        }
-    }
-
-    public static Analyzer getAnalyzer(final boolean ignoreCase) {
-        return new Analyzer() {
-            @Override
-            protected TokenStreamComponents createComponents(String fieldName,
-                    Reader reader) {
-                Tokenizer tokenizer = new KeywordTokenizer(reader);
-                @SuppressWarnings("resource")
-                TokenStream stream = ignoreCase ? new LowerCaseFilter(tokenizer)
-                        : tokenizer;
-                return new TokenStreamComponents(tokenizer, stream);
-            }
-        };
     }
 
     public Tokenizer create(Reader input) {
         return new NGramSynonymTokenizer(input, n, delimiters, expand,
-                ignoreCase, synonymMap);
+                ignoreCase, synonymLoader);
     }
 
 }

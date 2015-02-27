@@ -1,7 +1,8 @@
 package org.codelibs.elasticsearch.synonym;
 
-import static org.codelibs.elasticsearch.runner.ElasticsearchClusterRunner.*;
-import static org.junit.Assert.*;
+import static org.codelibs.elasticsearch.runner.ElasticsearchClusterRunner.newConfigs;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -10,8 +11,12 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
+import java.util.List;
+import java.util.Map;
 
 import org.codelibs.elasticsearch.runner.ElasticsearchClusterRunner;
+import org.codelibs.elasticsearch.runner.net.Curl;
+import org.codelibs.elasticsearch.runner.net.CurlResponse;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.common.settings.ImmutableSettings;
@@ -20,6 +25,7 @@ import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.index.query.MatchQueryBuilder.Type;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.node.Node;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -30,7 +36,7 @@ public class SynonymPluginTest {
 
     private File[] synonymFiles;
 
-    private int numOfNode = 1;
+    private int numOfNode = 2;
 
     private int numOfDocs = 1000;
 
@@ -42,7 +48,7 @@ public class SynonymPluginTest {
             public void build(final int number, final Builder settingsBuilder) {
                 settingsBuilder.put("http.cors.enabled", true);
                 settingsBuilder.put("index.number_of_replicas", 0);
-                settingsBuilder.put("index.number_of_shards", 1);
+                settingsBuilder.put("index.number_of_shards", 3);
             }
         }).build(newConfigs().ramIndexStore().numOfNode(numOfNode));
 
@@ -359,6 +365,127 @@ public class SynonymPluginTest {
         assertDocCount(numOfDocs, index, type, "msg2", "あいうえお");
         assertDocCount(0, index, type, "msg2", "か");
         assertDocCount(0, index, type, "msg2", "かき");
+    }
+
+    @Test
+    public void test_synonymPath_update() throws Exception {
+        synonymFiles = new File[numOfNode];
+        for (int i = 0; i < numOfNode; i++) {
+            String confPath = runner.getNode(i).settings().get("path.conf");
+            synonymFiles[i] = new File(confPath, "synonym.txt");
+            updateDictionary(synonymFiles[i], "東京,とうきょう");
+        }
+
+        runner.ensureYellow();
+        Node node = runner.node();
+
+        final String index = "dataset";
+        final String type = "item";
+
+        final String indexSettings = "{\"index\":{\"analysis\":{"
+                + "\"tokenizer\":{"//
+                + "\"2gram\":{\"type\":\"nGram\",\"min_gram\":\"2\",\"max_gram\":\"2\",\"token_chars\":[\"letter\",\"digit\"]},"
+                + "\"2gram_synonym\":{\"type\":\"ngram_synonym\",\"n\":\"2\",\"synonyms_path\":\"synonym.txt\",\"dynamic_reload\":true,\"reload_interval\":\"1s\"}"
+                + "},"//
+                + "\"filter\":{"//
+                + "\"synonym\":{\"type\":\"synonym\",\"synonyms_path\":\"synonym.txt\"}"
+                + "},"//
+                + "\"analyzer\":{"
+                + "\"2gram_analyzer\":{\"type\":\"custom\",\"tokenizer\":\"2gram\",\"filter\":[\"synonym\"]},"
+                + "\"2gram_synonym_analyzer\":{\"type\":\"custom\",\"tokenizer\":\"2gram_synonym\"}"
+                + "}"//
+                + "}}}";
+        runner.createIndex(index,
+                ImmutableSettings.builder().loadFromSource(indexSettings)
+                        .build());
+
+        // create a mapping
+        final XContentBuilder mappingBuilder = XContentFactory.jsonBuilder()//
+                .startObject()//
+                .startObject(type)//
+                .startObject("properties")//
+
+                // id
+                .startObject("id")//
+                .field("type", "string")//
+                .field("index", "not_analyzed")//
+                .endObject()//
+
+                // msg1
+                .startObject("msg1")//
+                .field("type", "string")//
+                .field("analyzer", "2gram_synonym_analyzer")//
+                .endObject()//
+
+                // msg2
+                .startObject("msg2")//
+                .field("type", "string")//
+                .field("analyzer", "2gram_analyzer")//
+                .endObject()//
+
+                .endObject()//
+                .endObject()//
+                .endObject();
+        runner.createMapping(index, type, mappingBuilder);
+
+        final IndexResponse indexResponse1 = runner.insert(index, type, "1",
+                "{\"msg1\":\"東京\", \"msg2\":\"東京\", \"id\":\"1\"}");
+        assertTrue(indexResponse1.isCreated());
+        runner.refresh();
+
+        for (int i = 0; i < 1000; i++) {
+            assertDocCount(1, index, type, "msg1", "東京");
+            assertDocCount(1, index, type, "msg1", "とうきょう");
+            assertDocCount(0, index, type, "msg1", "TOKYO");
+
+            assertDocCount(1, index, type, "msg2", "東京");
+            assertDocCount(0, index, type, "msg2", "とうきょう");
+            assertDocCount(0, index, type, "msg2", "TOKYO");
+
+            try (CurlResponse response = Curl
+                    .post(node, "/" + index + "/_analyze")
+                    .param("analyzer", "2gram_synonym_analyzer").body("東京")
+                    .execute()) {
+                @SuppressWarnings("unchecked")
+                List<Map<String, Object>> tokens = (List<Map<String, Object>>) response
+                        .getContentAsMap().get("tokens");
+                String token = tokens.get(1).get("token").toString();
+                assertEquals("とうきょう", token);
+            }
+        }
+
+        // changing a file timestamp
+        Thread.sleep(2000);
+
+        for (int i = 0; i < numOfNode; i++) {
+            updateDictionary(synonymFiles[i], "東京,TOKYO");
+        }
+
+        final IndexResponse indexResponse2 = runner.insert(index, type, "2",
+                "{\"msg1\":\"東京\", \"msg2\":\"東京\", \"id\":\"2\"}");
+        assertTrue(indexResponse2.isCreated());
+        runner.refresh();
+
+        for (int i = 0; i < 1000; i++) {
+            assertDocCount(2, index, type, "msg1", "東京");
+            assertDocCount(0, index, type, "msg1", "とうきょう");
+            assertDocCount(2, index, type, "msg1", "TOKYO");
+
+            assertDocCount(2, index, type, "msg2", "東京");
+            assertDocCount(0, index, type, "msg2", "とうきょう");
+            assertDocCount(0, index, type, "msg2", "TOKYO");
+
+            try (CurlResponse response = Curl
+                    .post(node, "/" + index + "/_analyze")
+                    .param("analyzer", "2gram_synonym_analyzer").body("東京")
+                    .execute()) {
+                @SuppressWarnings("unchecked")
+                List<Map<String, Object>> tokens = (List<Map<String, Object>>) response
+                        .getContentAsMap().get("tokens");
+                String token = tokens.get(1).get("token").toString();
+                assertEquals("tokyo", token);
+            }
+        }
     }
 
     private void assertDocCount(int expected, final String index,

@@ -42,6 +42,8 @@ public final class NGramSynonymTokenizer extends Tokenizer {
 
     public static final String DEFAULT_DELIMITERS = " 　\t\n\r";
 
+    static final int BUFFER_SIZE = 4096;
+
     private final int n;
 
     private final String delimiters;
@@ -50,7 +52,11 @@ public final class NGramSynonymTokenizer extends Tokenizer {
 
     private final boolean ignoreCase;
 
-    private final SynonymMap synonymMap;
+    private final SynonymLoader synonymLoader;
+
+    private long lastModified;
+
+    private SynonymMap synonymMap = null;
 
     private FST.Arc<BytesRef> scratchArc;
 
@@ -66,8 +72,6 @@ public final class NGramSynonymTokenizer extends Tokenizer {
 
     private int ch;
 
-    static final int BUFFER_SIZE = 4096;
-
     private char[] readBuffer;
 
     private int readBufferIndex;
@@ -76,13 +80,17 @@ public final class NGramSynonymTokenizer extends Tokenizer {
 
     StringBuilder block;
 
-    int blkStart, nextBlkStart, finalOffset;
+    int blkStart;
 
-    final PriorityQueue<MyToken> queue;
+    int nextBlkStart;
 
-    MyToken prevToken;
+    private int finalOffset;
 
-    final List<MyToken> synonyms;
+    private final PriorityQueue<MyToken> queue;
+
+    private MyToken prevToken;
+
+    private final List<MyToken> synonyms;
 
     private CharTermAttribute termAttr = addAttribute(CharTermAttribute.class);
 
@@ -91,15 +99,26 @@ public final class NGramSynonymTokenizer extends Tokenizer {
     private PositionIncrementAttribute posIncAttr = addAttribute(PositionIncrementAttribute.class);
 
     protected NGramSynonymTokenizer(Reader input, int n, String delimiters,
-            boolean expand, boolean ignoreCase, SynonymMap map) {
+            boolean expand, boolean ignoreCase, SynonymLoader synonymLoader) {
         super(input);
         this.n = n;
         this.delimiters = delimiters;
         this.expand = expand;
         this.ignoreCase = ignoreCase;
-        this.synonymMap = map;
-        if (map != null) {
-            this.fst = map.fst;
+        if (synonymLoader != null) {
+            if (synonymLoader.isReloadable()) {
+                this.synonymLoader = synonymLoader;
+                this.lastModified = synonymLoader.getLastModified();
+            } else {
+                this.synonymLoader = null;
+                this.lastModified = System.currentTimeMillis();
+            }
+            this.synonymMap = synonymLoader.getSynonymMap();
+        } else {
+            this.synonymLoader = null;
+        }
+        if (synonymMap != null) {
+            this.fst = synonymMap.fst;
             if (fst == null) {
                 throw new IllegalArgumentException("fst must be non-null");
             }
@@ -308,11 +327,26 @@ public final class NGramSynonymTokenizer extends Tokenizer {
     public void reset() throws IOException {
         super.reset();
         block.setLength(0);
+        prevToken = null;
         readBufferIndex = BUFFER_SIZE;
         readBufferLen = 0;
         ch = 0;
         blkStart = 0;
         nextBlkStart = 0;
+        if (synonymLoader != null && synonymLoader.isUpdate(lastModified)) {
+            lastModified = synonymLoader.getLastModified();
+            SynonymMap map = synonymLoader.getSynonymMap();
+            if (map != null) {
+                synonymMap = map;
+                fst = synonymMap.fst;
+                if (fst == null) {
+                    throw new IllegalArgumentException("fst must be non-null");
+                }
+                fstReader = fst.getBytesReader();
+                scratchArc = new FST.Arc<BytesRef>();
+                clearAttributes();
+            }
+        }
     }
 
     boolean getNextBlock() throws IOException {
