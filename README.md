@@ -122,4 +122,24 @@ Try searching...
        }
     }'
 
+### Reload synonyms_path File Dynamically
+
+To add "dynamic\_reload" property as true, NGramSynonymTokenizer reloads synonyms_path file on the fly(actually, it's reload on reset() method call).
+If you want to change an interval time to check a file timestamp, add "reload_interval".
+
+    $ curl -XPUT localhost:9200/sample?pretty -d '
+    {
+      "settings":{
+        "index":{
+          "analysis":{
+            "tokenizer":{
+              "2gram_synonym":{
+                "type":"ngram_synonym",
+                "n":"2",
+                "synonyms_path":"synonym.txt",
+                "dynamic_reload":true,
+                "reload_interval":"10s"
+              }
+            },
+    ...
 
