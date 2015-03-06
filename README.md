@@ -11,7 +11,7 @@ For more details, see [LUCENE-5252](https://issues.apache.org/jira/browse/LUCENE
 | Version   | elasticsearch |
 |:---------:|:-------------:|
 | master    | 1.4.X         |
-| 1.4.2     | 1.4.2         |
+| 1.4.3     | 1.4.4         |
 
 ### Issues/Questions
 
@@ -20,13 +20,13 @@ Please file an [issue](https://github.com/codelibs/elasticsearch-analysis-synony
 
 ## Installation
 
-    $ $ES_HOME/bin/plugin --install org.codelibs/elasticsearch-analysis-synonym/1.4.2
+    $ $ES_HOME/bin/plugin --install org.codelibs/elasticsearch-analysis-synonym/1.4.3
 
 ## Getting Started
 
 ### Create synonym.txt File
 
-First of all, you need to create a synonym dictionary file, synonym.txt in $ES_CONF(ex. /etc/elasticsearch).
+First of all, you need to create a synonym dictionary file, synonym.txt in $ES\_CONF(ex. /etc/elasticsearch).
 (The following content is just a sample...)
 
     $ cat /etc/elasticsearch/synonym.txt
@@ -34,8 +34,8 @@ First of all, you need to create a synonym dictionary file, synonym.txt in $ES_C
 
 ### Create Index
 
-NGramSynonymTokenizer is defined as "ngram_synonym" type.
-Creating an index with "ngram_synonym" is below:
+NGramSynonymTokenizer is defined as "ngram\_synonym" type.
+Creating an index with "ngram\_synonym" is below:
 
     $ curl -XPUT localhost:9200/sample?pretty -d '
     {
@@ -124,8 +124,8 @@ Try searching...
 
 ### Reload synonyms_path File Dynamically
 
-To add "dynamic\_reload" property as true, NGramSynonymTokenizer reloads synonyms_path file on the fly(actually, it's reload on reset() method call).
-If you want to change an interval time to check a file timestamp, add "reload_interval".
+To add "dynamic\_reload" property as true, NGramSynonymTokenizer reloads synonyms\_path file on the fly(actually, it's reload on reset() method call).
+If you want to change an interval time to check a file timestamp, add "reload\_interval".
 
     $ curl -XPUT localhost:9200/sample?pretty -d '
     {
