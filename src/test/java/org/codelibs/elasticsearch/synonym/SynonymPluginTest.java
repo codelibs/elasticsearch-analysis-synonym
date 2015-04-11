@@ -488,11 +488,160 @@ public class SynonymPluginTest {
         }
     }
 
+
+    @Test
+    public void test_synonymFilterPath_update() throws Exception {
+        synonymFiles = new File[numOfNode];
+        for (int i = 0; i < numOfNode; i++) {
+            String confPath = runner.getNode(i).settings().get("path.conf");
+            synonymFiles[i] = new File(confPath, "synonym.txt");
+            updateDictionary(synonymFiles[i], "東京,とうきょう\nああ,嗚呼");
+        }
+
+        runner.ensureYellow();
+        Node node = runner.node();
+
+        final String index = "dataset";
+        final String type = "item";
+
+        final String indexSettings = "{\"index\":{\"analysis\":{"
+                + "\"tokenizer\":{"//
+                + "\"2gram\":{\"type\":\"nGram\",\"min_gram\":\"2\",\"max_gram\":\"2\",\"token_chars\":[\"letter\",\"digit\"]}"
+                + "},"//
+                + "\"filter\":{"//
+                + "\"synonym\":{       \"type\":\"synonym_filter\",\"synonyms_path\":\"synonym.txt\",\"ignore_case\":true,\"tokenizer\":\"2gram\",\"min_gram\":\"2\",\"max_gram\":\"2\",\"token_chars\":[\"letter\",\"digit\"]},"
+                + "\"synonym_reload\":{\"type\":\"synonym_filter\",\"synonyms_path\":\"synonym.txt\",\"ignore_case\":true,\"tokenizer\":\"2gram\",\"min_gram\":\"2\",\"max_gram\":\"2\",\"token_chars\":[\"letter\",\"digit\"],\"dynamic_reload\":true,\"reload_interval\":\"1s\"}"
+                + "},"//
+                + "\"analyzer\":{"
+                + "\"2gram_analyzer\":{\"type\":\"custom\",\"tokenizer\":\"2gram\",\"filter\":[\"lowercase\"]},"
+                + "\"2gram_synonym_analyzer\":{\"type\":\"custom\",\"tokenizer\":\"2gram\",\"filter\":[\"synonym\"]},"
+                + "\"2gram_reload_analyzer\":{\"type\":\"custom\",\"tokenizer\":\"2gram\",\"filter\":[\"synonym_reload\"]}"
+                + "}"//
+                + "}}}";
+        runner.createIndex(index,
+                ImmutableSettings.builder().loadFromSource(indexSettings)
+                        .build());
+
+        // create a mapping
+        final XContentBuilder mappingBuilder = XContentFactory.jsonBuilder()//
+                .startObject()//
+                .startObject(type)//
+                .startObject("properties")//
+
+                // id
+                .startObject("id")//
+                .field("type", "string")//
+                .field("index", "not_analyzed")//
+                .endObject()//
+
+                // msg1
+                .startObject("msg1")//
+                .field("type", "string")//
+                .field("analyzer", "2gram_reload_analyzer")//
+                .endObject()//
+
+                // msg2
+                .startObject("msg2")//
+                .field("type", "string")//
+                .field("analyzer", "2gram_synonym_analyzer")//
+                .endObject()//
+
+                .endObject()//
+                .endObject()//
+                .endObject();
+        runner.createMapping(index, type, mappingBuilder);
+
+        final IndexResponse indexResponse1 = runner.insert(index, type, "1",
+                "{\"msg1\":\"東京\", \"msg2\":\"東京\", \"id\":\"1\"}");
+        assertTrue(indexResponse1.isCreated());
+        final IndexResponse indexResponse10 = runner.insert(index, type, "10",
+                "{\"msg1\":\"ああ\", \"msg2\":\"ああ\", \"id\":\"10\"}");
+        assertTrue(indexResponse10.isCreated());
+        runner.refresh();
+
+        for (int i = 0; i < 1000; i++) {
+            assertDocCount(1, index, type, "msg1", "東京", "2gram_analyzer");
+            assertDocCount(1, index, type, "msg1", "とうきょう", "2gram_analyzer");
+            assertDocCount(0, index, type, "msg1", "TOKYO", "2gram_analyzer");
+
+            assertDocCount(1, index, type, "msg2", "東京");
+            assertDocCount(1, index, type, "msg2", "とうきょう");
+            assertDocCount(0, index, type, "msg2", "TOKYO");
+
+            assertDocCount(1, index, type, "msg1", "ああ");
+            assertDocCount(1, index, type, "msg1", "嗚呼");
+            assertDocCount(0, index, type, "msg1", "あゝ");
+
+            try (CurlResponse response = Curl
+                    .post(node, "/" + index + "/_analyze")
+                    .param("analyzer", "2gram_reload_analyzer").body("東京")
+                    .execute()) {
+                @SuppressWarnings("unchecked")
+                List<Map<String, Object>> tokens = (List<Map<String, Object>>) response
+                        .getContentAsMap().get("tokens");
+                assertEquals("東京", tokens.get(0).get("token").toString());
+                assertEquals("とう", tokens.get(1).get("token").toString());
+                assertEquals("うき", tokens.get(2).get("token").toString());
+                assertEquals("きょ", tokens.get(3).get("token").toString());
+                assertEquals("ょう", tokens.get(4).get("token").toString());
+            }
+        }
+
+        // changing a file timestamp
+        Thread.sleep(2000);
+
+        for (int i = 0; i < numOfNode; i++) {
+            updateDictionary(synonymFiles[i], "東京,TOKYO\nああ,あゝ");
+        }
+
+        final IndexResponse indexResponse2 = runner.insert(index, type, "2",
+                "{\"msg1\":\"東京\", \"msg2\":\"東京\", \"id\":\"2\"}");
+        assertTrue(indexResponse2.isCreated());
+        final IndexResponse indexResponse11 = runner.insert(index, type, "11",
+                "{\"msg1\":\"ああ\", \"msg2\":\"ああ\", \"id\":\"11\"}");
+        assertTrue(indexResponse11.isCreated());
+        runner.refresh();
+
+        for (int i = 0; i < 1000; i++) {
+            assertDocCount(2, index, type, "msg1", "東京", "2gram_analyzer");
+            assertDocCount(1, index, type, "msg1", "とうきょう", "2gram_analyzer");
+            assertDocCount(1, index, type, "msg1", "TOKYO", "2gram_analyzer");
+
+            assertDocCount(2, index, type, "msg2", "東京");
+            assertDocCount(2, index, type, "msg2", "とうきょう");
+            assertDocCount(0, index, type, "msg2", "TOKYO");
+
+            assertDocCount(2, index, type, "msg1", "ああ");
+            assertDocCount(1, index, type, "msg1", "嗚呼");
+            assertDocCount(2, index, type, "msg1", "あゝ");
+
+            try (CurlResponse response = Curl
+                    .post(node, "/" + index + "/_analyze")
+                    .param("analyzer", "2gram_reload_analyzer").body("東京")
+                    .execute()) {
+                @SuppressWarnings("unchecked")
+                List<Map<String, Object>> tokens = (List<Map<String, Object>>) response
+                        .getContentAsMap().get("tokens");
+                assertEquals("東京", tokens.get(0).get("token").toString());
+                assertEquals("to", tokens.get(1).get("token").toString());
+                assertEquals("ok", tokens.get(2).get("token").toString());
+                assertEquals("ky", tokens.get(3).get("token").toString());
+                assertEquals("yo", tokens.get(4).get("token").toString());
+            }
+        }
+    }
+
     private void assertDocCount(int expected, final String index,
             final String type, final String field, final String value) {
+        assertDocCount(expected, index, type, field, value, null);
+    }
+
+    private void assertDocCount(int expected, final String index,
+            final String type, final String field, final String value,
+            String analyzer) {
         final SearchResponse searchResponse = runner.search(index, type,
-                QueryBuilders.matchQuery(field, value).type(Type.PHRASE), null,
-                0, numOfDocs);
+                QueryBuilders.matchQuery(field, value).type(Type.PHRASE)
+                        .analyzer(analyzer), null, 0, numOfDocs);
         assertEquals(expected, searchResponse.getHits().getTotalHits());
     }
 }

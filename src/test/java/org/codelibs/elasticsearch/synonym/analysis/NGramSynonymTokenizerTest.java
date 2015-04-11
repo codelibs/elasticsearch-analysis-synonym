@@ -1438,7 +1438,7 @@ public class NGramSynonymTokenizerTest {
         Reader reader) {
             final Tokenizer source = new NGramSynonymTokenizer(reader, n,
                     delimiters, expand, true, new SynonymLoader(null, null,
-                            expand, true) {
+                            expand, null) {
                         @Override
                         public SynonymMap getSynonymMap() {
                             return synonyms;

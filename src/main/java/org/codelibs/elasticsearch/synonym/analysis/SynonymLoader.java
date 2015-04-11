@@ -44,11 +44,11 @@ public class SynonymLoader {
 	private volatile SynonymMap synonymMap;
 
 	public SynonymLoader(Environment env, Settings settings, boolean expand,
-			boolean ignoreCase) {
+			Analyzer analyzer) {
 		this.env = env;
 		this.settings = settings;
 		this.expand = expand;
-		this.analyzer = getAnalyzer(ignoreCase);
+		this.analyzer = analyzer;
 
 		createSynonymMap(false);
 	}
@@ -176,6 +176,10 @@ public class SynonymLoader {
 		return reloadableFile != null;
 	}
 
+	public long getLastModified() {
+		return lastModified;
+	}
+
 	protected static Analyzer getAnalyzer(final boolean ignoreCase) {
 		return new Analyzer() {
 			@Override
@@ -188,9 +192,5 @@ public class SynonymLoader {
 				return new TokenStreamComponents(tokenizer, stream);
 			}
 		};
-	}
-
-	public long getLastModified() {
-		return lastModified;
 	}
 }

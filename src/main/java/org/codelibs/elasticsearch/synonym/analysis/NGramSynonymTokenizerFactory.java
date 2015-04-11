@@ -55,7 +55,7 @@ public final class NGramSynonymTokenizerFactory extends
                 NGramSynonymTokenizer.DEFAULT_DELIMITERS);
         expand = settings.getAsBoolean("expand", true);
 
-        synonymLoader = new SynonymLoader(env, settings, expand, ignoreCase);
+        synonymLoader = new SynonymLoader(env, settings, expand, SynonymLoader.getAnalyzer(ignoreCase));
         if (synonymLoader.getSynonymMap() == null) {
             if (settings.getAsArray("synonyms", null) != null) {
                 logger.warn("synonyms values are empty.");
@@ -63,7 +63,7 @@ public final class NGramSynonymTokenizerFactory extends
                 logger.warn("synonyms_path[{}] is empty.",
                         settings.get("synonyms_path"));
             } else {
-                logger.warn("No synonym data.");
+                logger.debug("No synonym data.");
             }
         }
     }
@@ -72,5 +72,4 @@ public final class NGramSynonymTokenizerFactory extends
         return new NGramSynonymTokenizer(input, n, delimiters, expand,
                 ignoreCase, synonymLoader);
     }
-
 }
