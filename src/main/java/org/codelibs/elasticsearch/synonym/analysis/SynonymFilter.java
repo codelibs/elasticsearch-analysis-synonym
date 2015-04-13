@@ -46,7 +46,7 @@ import org.apache.lucene.util.fst.FST;
  * <p>Note that with the current implementation, parsing is
  * greedy, so whenever multiple parses would apply, the rule
  * starting the earliest and parsing the most tokens wins.
- * For example if you have these rules:
+ * For example if you have these rules:</p>
  *      
  * <pre>
  *   a -&gt; x
@@ -54,7 +54,7 @@ import org.apache.lucene.util.fst.FST;
  *   b c d -&gt; z
  * </pre>
  *
- * Then input <code>a b c d e</code> parses to <code>y b c
+ * <p>Then input <code>a b c d e</code> parses to <code>y b c
  * d</code>, ie the 2nd rule "wins" because it started
  * earliest and matched the most input tokens of other rules
  * starting at that point.</p>
@@ -259,7 +259,7 @@ public final class SynonymFilter extends TokenFilter {
 
   /**
    * @param input input tokenstream
-   * @param synonyms synonym map
+   * @param synonymLoader synonym loader
    * @param ignoreCase case-folds input for matching with {@link Character#toLowerCase(int)}.
    *                   Note, if you set this to true, its your responsibility to lowercase
    *                   the input entries when you create the {@link SynonymMap}
