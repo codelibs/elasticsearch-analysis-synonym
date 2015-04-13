@@ -10,7 +10,8 @@ For more details, see [LUCENE-5252](https://issues.apache.org/jira/browse/LUCENE
 
 | Version   | elasticsearch |
 |:---------:|:-------------:|
-| master    | 1.4.X         |
+| master    | 1.5.X         |
+| 1.5.0     | 1.5.1         |
 | 1.4.3     | 1.4.4         |
 
 ### Issues/Questions
@@ -20,7 +21,7 @@ Please file an [issue](https://github.com/codelibs/elasticsearch-analysis-synony
 
 ## Installation
 
-    $ $ES_HOME/bin/plugin --install org.codelibs/elasticsearch-analysis-synonym/1.4.3
+    $ $ES_HOME/bin/plugin --install org.codelibs/elasticsearch-analysis-synonym/1.5.0
 
 ## Getting Started
 
