@@ -13,6 +13,7 @@ import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import org.codelibs.elasticsearch.runner.ElasticsearchClusterRunner;
 import org.codelibs.elasticsearch.runner.net.Curl;
@@ -50,7 +51,8 @@ public class SynonymPluginTest {
                 settingsBuilder.put("index.number_of_replicas", 0);
                 settingsBuilder.put("index.number_of_shards", 3);
             }
-        }).build(newConfigs().ramIndexStore().numOfNode(numOfNode));
+        }).build(newConfigs().ramIndexStore().numOfNode(numOfNode)
+                .clusterName(UUID.randomUUID().toString()));
 
         synonymFiles = null;
     }
