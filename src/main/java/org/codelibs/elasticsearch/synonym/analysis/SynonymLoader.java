@@ -5,7 +5,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
-import java.net.URL;
+import java.nio.file.Path;
 import java.util.List;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -16,13 +16,14 @@ import org.apache.lucene.analysis.core.LowerCaseFilter;
 import org.apache.lucene.analysis.synonym.SolrSynonymParser;
 import org.apache.lucene.analysis.synonym.SynonymMap;
 import org.apache.lucene.analysis.synonym.WordnetSynonymParser;
-import org.elasticsearch.ElasticsearchIllegalArgumentException;
-import org.elasticsearch.common.base.Charsets;
 import org.elasticsearch.common.io.FastStringReader;
+import org.elasticsearch.common.io.FileSystemUtils;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.env.Environment;
 import org.elasticsearch.index.analysis.Analysis;
+
+import com.google.common.base.Charsets;
 
 public class SynonymLoader {
 	private File reloadableFile = null;
@@ -111,7 +112,7 @@ public class SynonymLoader {
 			}
 
 		} catch (Exception e) {
-			throw new ElasticsearchIllegalArgumentException(
+			throw new IllegalArgumentException(
 					"failed to build synonyms", e);
 		}
 	}
@@ -119,7 +120,7 @@ public class SynonymLoader {
 	private Reader getReader(boolean reload) throws IOException {
 		if (reload) {
 			if (reloadableFile == null) {
-				throw new ElasticsearchIllegalArgumentException(
+				throw new IllegalArgumentException(
 						"reloadableFile is null.");
 			}
 			return new InputStreamReader(new FileInputStream(reloadableFile),
@@ -140,21 +141,21 @@ public class SynonymLoader {
 				String filePath = settings.get("synonyms_path", null);
 
 				if (filePath == null) {
-					throw new ElasticsearchIllegalArgumentException(
+					throw new IllegalArgumentException(
 							"synonyms_path is not found.");
 				}
 
-				URL fileUrl = env.resolveConfig(filePath);
+				Path path = env.configFile().resolve(filePath);
 
 				try {
-					File file = new File(fileUrl.toURI());
+					File file = path.toFile();
 					if (file.exists()) {
 						reloadableFile = file;
 					}
-					reader = new InputStreamReader(fileUrl.openStream(),
-							Charsets.UTF_8);
+                    reader = FileSystemUtils.newBufferedReader(
+                            path.toUri().toURL(), Charsets.UTF_8);
 				} catch (Exception e) {
-					throw new ElasticsearchIllegalArgumentException(
+					throw new IllegalArgumentException(
 							"Failed to read " + filePath);
 				}
 
@@ -183,9 +184,8 @@ public class SynonymLoader {
 	protected static Analyzer getAnalyzer(final boolean ignoreCase) {
 		return new Analyzer() {
 			@Override
-			protected TokenStreamComponents createComponents(String fieldName,
-					Reader reader) {
-				Tokenizer tokenizer = new KeywordTokenizer(reader);
+			protected TokenStreamComponents createComponents(String fieldName) {
+				Tokenizer tokenizer = new KeywordTokenizer();
 				@SuppressWarnings("resource")
 				TokenStream stream = ignoreCase ? new LowerCaseFilter(tokenizer)
 						: tokenizer;

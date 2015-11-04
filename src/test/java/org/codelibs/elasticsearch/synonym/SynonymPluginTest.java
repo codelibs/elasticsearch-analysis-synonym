@@ -20,8 +20,8 @@ import org.codelibs.elasticsearch.runner.net.Curl;
 import org.codelibs.elasticsearch.runner.net.CurlResponse;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.common.settings.ImmutableSettings;
-import org.elasticsearch.common.settings.ImmutableSettings.Builder;
+import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.common.settings.Settings.Builder;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.index.query.MatchQueryBuilder.Type;
@@ -50,8 +50,11 @@ public class SynonymPluginTest {
                 settingsBuilder.put("http.cors.enabled", true);
                 settingsBuilder.put("index.number_of_replicas", 0);
                 settingsBuilder.put("index.number_of_shards", 3);
+                settingsBuilder.put("http.cors.allow-origin", "*");
+                settingsBuilder.putArray("discovery.zen.ping.unicast.hosts", "localhost:9301-9399");
+                settingsBuilder.put("plugin.types", "org.codelibs.elasticsearch.synonym.SynonymPlugin");
             }
-        }).build(newConfigs().ramIndexStore().numOfNode(numOfNode)
+        }).build(newConfigs().numOfNode(numOfNode)
                 .clusterName(UUID.randomUUID().toString()));
 
         synonymFiles = null;
@@ -100,7 +103,7 @@ public class SynonymPluginTest {
                 + "}"//
                 + "}}}";
         runner.createIndex(index,
-                ImmutableSettings.builder().loadFromSource(indexSettings)
+                Settings.builder().loadFromSource(indexSettings)
                         .build());
 
         // create a mapping
@@ -199,7 +202,7 @@ public class SynonymPluginTest {
                 + "}"//
                 + "}}}";
         runner.createIndex(index,
-                ImmutableSettings.builder().loadFromSource(indexSettings)
+                Settings.builder().loadFromSource(indexSettings)
                         .build());
 
         // create a mapping
@@ -298,7 +301,7 @@ public class SynonymPluginTest {
                 + "}"//
                 + "}}}";
         runner.createIndex(index,
-                ImmutableSettings.builder().loadFromSource(indexSettings)
+                Settings.builder().loadFromSource(indexSettings)
                         .build());
 
         // create a mapping
@@ -398,7 +401,7 @@ public class SynonymPluginTest {
                 + "}"//
                 + "}}}";
         runner.createIndex(index,
-                ImmutableSettings.builder().loadFromSource(indexSettings)
+                Settings.builder().loadFromSource(indexSettings)
                         .build());
 
         // create a mapping
@@ -521,7 +524,7 @@ public class SynonymPluginTest {
                 + "}"//
                 + "}}}";
         runner.createIndex(index,
-                ImmutableSettings.builder().loadFromSource(indexSettings)
+                Settings.builder().loadFromSource(indexSettings)
                         .build());
 
         // create a mapping

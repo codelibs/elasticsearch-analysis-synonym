@@ -18,7 +18,6 @@ package org.codelibs.elasticsearch.synonym.analysis;
  */
 
 import java.io.IOException;
-import java.io.Reader;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -98,9 +97,8 @@ public final class NGramSynonymTokenizer extends Tokenizer {
 
     private PositionIncrementAttribute posIncAttr = addAttribute(PositionIncrementAttribute.class);
 
-    protected NGramSynonymTokenizer(Reader input, int n, String delimiters,
+    protected NGramSynonymTokenizer(int n, String delimiters,
             boolean expand, boolean ignoreCase, SynonymLoader synonymLoader) {
-        super(input);
         this.n = n;
         this.delimiters = delimiters;
         this.expand = expand;
@@ -113,15 +111,15 @@ public final class NGramSynonymTokenizer extends Tokenizer {
                 this.synonymLoader = null;
                 this.lastModified = System.currentTimeMillis();
             }
-            this.synonymMap = synonymLoader.getSynonymMap();
+            synonymMap = synonymLoader.getSynonymMap();
+            if (synonymMap != null && synonymMap.fst == null) {
+                this.synonymMap = null;
+            }
         } else {
             this.synonymLoader = null;
         }
         if (synonymMap != null) {
             this.fst = synonymMap.fst;
-            if (fst == null) {
-                throw new IllegalArgumentException("fst must be non-null");
-            }
             this.fstReader = fst.getBytesReader();
             scratchArc = new FST.Arc<BytesRef>();
         }
@@ -237,6 +235,8 @@ public final class NGramSynonymTokenizer extends Tokenizer {
                 processPrevSynonym(synonym.startOffset, limitOffset);
             }
 
+            queue.add(synonym);
+
             // enqueue synonyms
             if (expand) {
                 bytesReader.reset(synonym.output.bytes, synonym.output.offset,
@@ -259,8 +259,6 @@ public final class NGramSynonymTokenizer extends Tokenizer {
                     queue.add(new MyToken(word, synonym.startOffset,
                             synonym.endOffset, posInc, seq));
                 }
-            } else {
-                queue.add(synonym);
             }
 
             // enqueue after-synonym

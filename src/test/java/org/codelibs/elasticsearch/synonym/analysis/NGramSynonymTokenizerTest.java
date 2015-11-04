@@ -107,9 +107,10 @@ public class NGramSynonymTokenizerTest {
   }
   
   private NGramSynonymTokenizer getTokenizer(String input) throws IOException {
-    NGramSynonymTokenizer tokenizer = new NGramSynonymTokenizer(new StringReader(input),
+    NGramSynonymTokenizer tokenizer = new NGramSynonymTokenizer(
         NGramSynonymTokenizer.DEFAULT_N_SIZE,
         NGramSynonymTokenizer.DEFAULT_DELIMITERS, false, true, null);
+    tokenizer.setReader(new StringReader(input));
     tokenizer.reset();
     return tokenizer;
   }
@@ -1434,9 +1435,8 @@ public class NGramSynonymTokenizerTest {
       this.synonyms = synonyms;
     }
 
-    protected TokenStreamComponents createComponents(String fieldName,
-        Reader reader) {
-            final Tokenizer source = new NGramSynonymTokenizer(reader, n,
+    protected TokenStreamComponents createComponents(String fieldName) {
+            final Tokenizer source = new NGramSynonymTokenizer(n,
                     delimiters, expand, true, new SynonymLoader(null, null,
                             expand, null) {
                         @Override

@@ -1,6 +1,5 @@
 package org.codelibs.elasticsearch.synonym.analysis;
 
-import java.io.Reader;
 import java.util.Map;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -8,11 +7,8 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.LowerCaseFilter;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
-import org.elasticsearch.ElasticsearchIllegalArgumentException;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.inject.assistedinject.Assisted;
-import org.elasticsearch.common.lucene.Lucene;
-import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.env.Environment;
 import org.elasticsearch.index.Index;
@@ -45,15 +41,16 @@ public class SynonymTokenFilterFactory extends AbstractTokenFilterFactory {
             tokenizerFactoryFactory = indicesAnalysisService.tokenizerFactoryFactory(tokenizerName);
         }
         if (tokenizerFactoryFactory == null) {
-            throw new ElasticsearchIllegalArgumentException("failed to find tokenizer [" + tokenizerName + "] for synonym token filter");
+            throw new IllegalArgumentException("failed to find tokenizer [" + tokenizerName + "] for synonym token filter");
         }
-        final TokenizerFactory tokenizerFactory = tokenizerFactoryFactory.create(tokenizerName, ImmutableSettings.builder().put(indexSettings).put(settings).build());
+
+        final TokenizerFactory tokenizerFactory = tokenizerFactoryFactory.create(tokenizerName, Settings.builder().put(indexSettings).put(settings).build());
 
         Analyzer analyzer = new Analyzer() {
             @Override
-            protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-                Tokenizer tokenizer = tokenizerFactory == null ? new WhitespaceTokenizer(Lucene.ANALYZER_VERSION, reader) : tokenizerFactory.create(reader);
-                TokenStream stream = ignoreCase ? new LowerCaseFilter(Lucene.ANALYZER_VERSION, tokenizer) : tokenizer;
+            protected TokenStreamComponents createComponents(String fieldName) {
+                Tokenizer tokenizer = tokenizerFactory == null ? new WhitespaceTokenizer() : tokenizerFactory.create();
+                TokenStream stream = ignoreCase ? new LowerCaseFilter(tokenizer) : tokenizer;
                 return new TokenStreamComponents(tokenizer, stream);
             }
         };
@@ -66,7 +63,7 @@ public class SynonymTokenFilterFactory extends AbstractTokenFilterFactory {
                 logger.warn("synonyms_path[{}] is empty.",
                         settings.get("synonyms_path"));
             } else {
-                throw new ElasticsearchIllegalArgumentException("synonym requires either `synonyms` or `synonyms_path` to be configured");
+                throw new IllegalArgumentException("synonym requires either `synonyms` or `synonyms_path` to be configured");
             }
         }
     }
