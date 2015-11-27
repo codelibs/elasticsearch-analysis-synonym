@@ -7,7 +7,7 @@ import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.env.Environment;
 import org.elasticsearch.index.Index;
 import org.elasticsearch.index.analysis.AbstractTokenizerFactory;
-import org.elasticsearch.index.settings.IndexSettings;
+import org.elasticsearch.index.settings.IndexSettingsService;
 
 /**
  * Factory for {@link NGramSynonymTokenizer}.
@@ -26,10 +26,9 @@ public final class NGramSynonymTokenizerFactory extends
     private SynonymLoader synonymLoader = null;
 
     @Inject
-    public NGramSynonymTokenizerFactory(Index index,
-            @IndexSettings Settings indexSettings, Environment env,
-            @Assisted String name, @Assisted Settings settings) {
-        super(index, indexSettings, name, settings);
+    public NGramSynonymTokenizerFactory(Index index, IndexSettingsService indexSettingsService, Environment env, @Assisted String name,
+            @Assisted Settings settings) {
+        super(index, indexSettingsService.getSettings(), name, settings);
         ignoreCase = settings.getAsBoolean("ignore_case", true);
         n = settings.getAsInt("n", NGramSynonymTokenizer.DEFAULT_N_SIZE);
         delimiters = settings.get("delimiters",

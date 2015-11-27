@@ -16,7 +16,7 @@ import org.elasticsearch.index.analysis.AbstractTokenFilterFactory;
 import org.elasticsearch.index.analysis.AnalysisSettingsRequired;
 import org.elasticsearch.index.analysis.TokenizerFactory;
 import org.elasticsearch.index.analysis.TokenizerFactoryFactory;
-import org.elasticsearch.index.settings.IndexSettings;
+import org.elasticsearch.index.settings.IndexSettingsService;
 import org.elasticsearch.indices.analysis.IndicesAnalysisService;
 
 @AnalysisSettingsRequired
@@ -27,9 +27,10 @@ public class SynonymTokenFilterFactory extends AbstractTokenFilterFactory {
     private SynonymLoader synonymLoader = null;
 
     @Inject
-    public SynonymTokenFilterFactory(Index index, @IndexSettings Settings indexSettings, Environment env, IndicesAnalysisService indicesAnalysisService, Map<String, TokenizerFactoryFactory> tokenizerFactories,
-                                     @Assisted String name, @Assisted Settings settings) {
-        super(index, indexSettings, name, settings);
+    public SynonymTokenFilterFactory(Index index, IndexSettingsService indexSettingsService, Environment env,
+            IndicesAnalysisService indicesAnalysisService, Map<String, TokenizerFactoryFactory> tokenizerFactories, @Assisted String name,
+            @Assisted Settings settings) {
+        super(index, indexSettingsService.getSettings(), name, settings);
 
         this.ignoreCase = settings.getAsBoolean("ignore_case", false);
         boolean expand = settings.getAsBoolean("expand", true);
@@ -44,7 +45,7 @@ public class SynonymTokenFilterFactory extends AbstractTokenFilterFactory {
             throw new IllegalArgumentException("failed to find tokenizer [" + tokenizerName + "] for synonym token filter");
         }
 
-        final TokenizerFactory tokenizerFactory = tokenizerFactoryFactory.create(tokenizerName, Settings.builder().put(indexSettings).put(settings).build());
+        final TokenizerFactory tokenizerFactory = tokenizerFactoryFactory.create(tokenizerName, Settings.builder().put(indexSettingsService.getSettings()).put(settings).build());
 
         Analyzer analyzer = new Analyzer() {
             @Override
