@@ -5,9 +5,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -147,10 +145,7 @@ public class SynonymLoader {
 							"synonyms_path is not found.");
 				}
 
-				Path path = Paths.get(filePath);
-				if (!Files.exists(path)) {
-					path = env.configFile().resolve(filePath);
-				}
+				Path path = env.configFile().resolve(filePath);
 
 				try {
 					File file = path.toFile();
