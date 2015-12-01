@@ -5,7 +5,9 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -145,7 +147,10 @@ public class SynonymLoader {
 							"synonyms_path is not found.");
 				}
 
-				Path path = env.configFile().resolve(filePath);
+				Path path = Paths.get(filePath);
+				if (!Files.exists(path)) {
+					path = env.configFile().resolve(filePath);
+				}
 
 				try {
 					File file = path.toFile();
@@ -156,7 +161,7 @@ public class SynonymLoader {
                             path.toUri().toURL(), Charsets.UTF_8);
 				} catch (Exception e) {
 					throw new IllegalArgumentException(
-							"Failed to read " + filePath);
+							"Failed to read " + filePath, e);
 				}
 
 				reloadInterval = settings.getAsTime("reload_interval",
@@ -186,7 +191,6 @@ public class SynonymLoader {
 			@Override
 			protected TokenStreamComponents createComponents(String fieldName) {
 				Tokenizer tokenizer = new KeywordTokenizer();
-				@SuppressWarnings("resource")
 				TokenStream stream = ignoreCase ? new LowerCaseFilter(tokenizer)
 						: tokenizer;
 				return new TokenStreamComponents(tokenizer, stream);
