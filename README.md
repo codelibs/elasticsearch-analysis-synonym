@@ -22,7 +22,7 @@ Please file an [issue](https://github.com/codelibs/elasticsearch-analysis-synony
 
 ## Installation
 
-    $ $ES_HOME/bin/plugin --install org.codelibs/elasticsearch-analysis-synonym/2.0.0
+    $ $ES_HOME/bin/plugin install org.codelibs/elasticsearch-analysis-synonym/2.0.0
 
 ## Getting Started
 
