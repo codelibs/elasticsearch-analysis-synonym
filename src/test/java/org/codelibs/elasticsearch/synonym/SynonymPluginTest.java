@@ -2,7 +2,6 @@ package org.codelibs.elasticsearch.synonym;
 
 import static org.codelibs.elasticsearch.runner.ElasticsearchClusterRunner.newConfigs;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -13,7 +12,6 @@ import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 import org.codelibs.elasticsearch.runner.ElasticsearchClusterRunner;
 import org.codelibs.elasticsearch.runner.net.Curl;
@@ -24,9 +22,9 @@ import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.settings.Settings.Builder;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
-import org.elasticsearch.index.query.MatchQueryBuilder.Type;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.node.Node;
+import org.elasticsearch.rest.RestStatus;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -37,25 +35,24 @@ public class SynonymPluginTest {
 
     private File[] synonymFiles;
 
-    private int numOfNode = 2;
+    private int numOfNode = 1;
 
     private int numOfDocs = 1000;
 
+    private String clusterName;
+
     @Before
     public void setUp() throws Exception {
+        clusterName = "es-analysissynonym-" + System.currentTimeMillis();
         runner = new ElasticsearchClusterRunner();
         runner.onBuild(new ElasticsearchClusterRunner.Builder() {
             @Override
             public void build(final int number, final Builder settingsBuilder) {
                 settingsBuilder.put("http.cors.enabled", true);
-                settingsBuilder.put("index.number_of_replicas", 0);
-                settingsBuilder.put("index.number_of_shards", 3);
                 settingsBuilder.put("http.cors.allow-origin", "*");
-                settingsBuilder.putArray("discovery.zen.ping.unicast.hosts", "localhost:9301-9399");
-                settingsBuilder.put("plugin.types", "org.codelibs.elasticsearch.synonym.SynonymPlugin");
             }
-        }).build(newConfigs().numOfNode(numOfNode)
-                .clusterName(UUID.randomUUID().toString()));
+        }).build(
+                newConfigs().numOfNode(numOfNode).clusterName(clusterName).pluginTypes("org.codelibs.elasticsearch.synonym.SynonymPlugin"));
 
         synonymFiles = null;
     }
@@ -140,7 +137,7 @@ public class SynonymPluginTest {
                     String.valueOf(i),
                     "{\"msg1\":\"あいうえお\", \"msg2\":\"あいうえお\", \"id\":\"" + i
                             + "\"}");
-            assertTrue(indexResponse1.isCreated());
+            assertEquals(RestStatus.CREATED, indexResponse1.status());
         }
         runner.refresh();
 
@@ -239,7 +236,7 @@ public class SynonymPluginTest {
                     String.valueOf(i),
                     "{\"msg1\":\"あいうえお\", \"msg2\":\"あいうえお\", \"id\":\"" + i
                             + "\"}");
-            assertTrue(indexResponse1.isCreated());
+            assertEquals(RestStatus.CREATED, indexResponse1.status());
         }
         runner.refresh();
 
@@ -338,7 +335,7 @@ public class SynonymPluginTest {
                     String.valueOf(i),
                     "{\"msg1\":\"あいうえお\", \"msg2\":\"あいうえお\", \"id\":\"" + i
                             + "\"}");
-            assertTrue(indexResponse1.isCreated());
+            assertEquals(RestStatus.CREATED, indexResponse1.status());
         }
         runner.refresh();
 
@@ -435,7 +432,7 @@ public class SynonymPluginTest {
 
         final IndexResponse indexResponse1 = runner.insert(index, type, "1",
                 "{\"msg1\":\"東京\", \"msg2\":\"東京\", \"id\":\"1\"}");
-        assertTrue(indexResponse1.isCreated());
+        assertEquals(RestStatus.CREATED, indexResponse1.status());
         runner.refresh();
 
         for (int i = 0; i < 1000; i++) {
@@ -468,7 +465,7 @@ public class SynonymPluginTest {
 
         final IndexResponse indexResponse2 = runner.insert(index, type, "2",
                 "{\"msg1\":\"東京\", \"msg2\":\"東京\", \"id\":\"2\"}");
-        assertTrue(indexResponse2.isCreated());
+        assertEquals(RestStatus.CREATED, indexResponse2.status());
         runner.refresh();
 
         for (int i = 0; i < 1000; i++) {
@@ -558,10 +555,10 @@ public class SynonymPluginTest {
 
         final IndexResponse indexResponse1 = runner.insert(index, type, "1",
                 "{\"msg1\":\"東京\", \"msg2\":\"東京\", \"id\":\"1\"}");
-        assertTrue(indexResponse1.isCreated());
+        assertEquals(RestStatus.CREATED, indexResponse1.status());
         final IndexResponse indexResponse10 = runner.insert(index, type, "10",
                 "{\"msg1\":\"ああ\", \"msg2\":\"ああ\", \"id\":\"10\"}");
-        assertTrue(indexResponse10.isCreated());
+        assertEquals(RestStatus.CREATED, indexResponse10.status());
         runner.refresh();
 
         for (int i = 0; i < 1000; i++) {
@@ -601,10 +598,10 @@ public class SynonymPluginTest {
 
         final IndexResponse indexResponse2 = runner.insert(index, type, "2",
                 "{\"msg1\":\"東京\", \"msg2\":\"東京\", \"id\":\"2\"}");
-        assertTrue(indexResponse2.isCreated());
+        assertEquals(RestStatus.CREATED, indexResponse2.status());
         final IndexResponse indexResponse11 = runner.insert(index, type, "11",
                 "{\"msg1\":\"ああ\", \"msg2\":\"ああ\", \"id\":\"11\"}");
-        assertTrue(indexResponse11.isCreated());
+        assertEquals(RestStatus.CREATED, indexResponse11.status());
         runner.refresh();
 
         for (int i = 0; i < 1000; i++) {
@@ -645,7 +642,7 @@ public class SynonymPluginTest {
             final String type, final String field, final String value,
             String analyzer) {
         final SearchResponse searchResponse = runner.search(index, type,
-                QueryBuilders.matchQuery(field, value).type(Type.PHRASE)
+                QueryBuilders.matchPhraseQuery(field, value)
                         .analyzer(analyzer), null, 0, numOfDocs);
         assertEquals(expected, searchResponse.getHits().getTotalHits());
     }

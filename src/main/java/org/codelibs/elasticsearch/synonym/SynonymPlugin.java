@@ -1,24 +1,86 @@
 package org.codelibs.elasticsearch.synonym;
 
+import static java.util.Collections.singletonList;
+import static java.util.Collections.singletonMap;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.codelibs.elasticsearch.synonym.analysis.NGramSynonymTokenizerFactory;
 import org.codelibs.elasticsearch.synonym.analysis.SynonymTokenFilterFactory;
-import org.elasticsearch.index.analysis.AnalysisModule;
+import org.codelibs.elasticsearch.synonym.service.SynonymAnalysisService;
+import org.elasticsearch.client.Client;
+import org.elasticsearch.cluster.service.ClusterService;
+import org.elasticsearch.common.component.LifecycleComponent;
+import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.env.Environment;
+import org.elasticsearch.index.IndexSettings;
+import org.elasticsearch.index.analysis.AnalysisRegistry;
+import org.elasticsearch.index.analysis.TokenFilterFactory;
+import org.elasticsearch.index.analysis.TokenizerFactory;
+import org.elasticsearch.indices.analysis.AnalysisModule.AnalysisProvider;
+import org.elasticsearch.plugins.AnalysisPlugin;
 import org.elasticsearch.plugins.Plugin;
+import org.elasticsearch.script.ScriptService;
+import org.elasticsearch.search.SearchRequestParsers;
+import org.elasticsearch.threadpool.ThreadPool;
+import org.elasticsearch.watcher.ResourceWatcherService;
 
-public class SynonymPlugin extends Plugin {
+public class SynonymPlugin extends Plugin implements AnalysisPlugin {
+
+    private PluginComponent pluginComponent = new PluginComponent();
+
     @Override
-    public String name() {
-        return "analysis-synonym";
+    public Collection<Class<? extends LifecycleComponent>> getGuiceServiceClasses() {
+        return singletonList(SynonymAnalysisService.class);
     }
 
     @Override
-    public String description() {
-        return "This plugin provides N-Gram Synonym Tokenizer.";
+    public Collection<Object> createComponents(Client client, ClusterService clusterService, ThreadPool threadPool,
+            ResourceWatcherService resourceWatcherService, ScriptService scriptService, SearchRequestParsers searchRequestParsers) {
+        Collection<Object> components = new ArrayList<>();
+        components.add(pluginComponent);
+        return components;
     }
 
-    public void onModule(AnalysisModule module) {
-        module.addTokenizer("ngram_synonym", NGramSynonymTokenizerFactory.class);
-        module.addTokenFilter("synonym_filter", SynonymTokenFilterFactory.class);
+    @Override
+    public Map<String, AnalysisProvider<TokenFilterFactory>> getTokenFilters() {
+        Map<String, AnalysisProvider<TokenFilterFactory>> extra = new HashMap<>();
+        extra.put("synonym_filter", new AnalysisProvider<TokenFilterFactory>() {
+
+            @Override
+            public TokenFilterFactory get(IndexSettings indexSettings, Environment environment, String name, Settings settings)
+                    throws IOException {
+                return new SynonymTokenFilterFactory(indexSettings, environment, name, settings, pluginComponent.getAnalysisRegistry());
+            }
+
+            @Override
+            public boolean requiresAnalysisSettings() {
+                return true;
+            }
+        });
+        return extra;
     }
 
+    @Override
+    public Map<String, AnalysisProvider<TokenizerFactory>> getTokenizers() {
+        return singletonMap("ngram_synonym", NGramSynonymTokenizerFactory::new);
+    }
+
+    public static class PluginComponent {
+
+        private AnalysisRegistry analysisRegistry;
+
+        public AnalysisRegistry getAnalysisRegistry() {
+            return analysisRegistry;
+        }
+
+        public void setAnalysisRegistry(AnalysisRegistry analysisRegistry) {
+            this.analysisRegistry = analysisRegistry;
+        }
+
+    }
 }

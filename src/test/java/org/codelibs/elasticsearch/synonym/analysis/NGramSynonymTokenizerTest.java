@@ -20,7 +20,6 @@ package org.codelibs.elasticsearch.synonym.analysis;
 import static org.junit.Assert.*;
 
 import java.io.IOException;
-import java.io.Reader;
 import java.io.StringReader;
 import java.text.ParseException;
 import java.util.PriorityQueue;

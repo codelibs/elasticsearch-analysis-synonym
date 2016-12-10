@@ -210,12 +210,12 @@ public final class SynonymFilter extends TokenFilter {
         outputs = Arrays.copyOf(outputs, ArrayUtil.oversize(1+count, RamUsageEstimator.NUM_BYTES_OBJECT_REF));
       }
       if (count == endOffsets.length) {
-        final int[] next = new int[ArrayUtil.oversize(1+count, RamUsageEstimator.NUM_BYTES_INT)];
+        final int[] next = new int[ArrayUtil.oversize(1+count, Integer.BYTES)];
         System.arraycopy(endOffsets, 0, next, 0, count);
         endOffsets = next;
       }
       if (count == posLengths.length) {
-        final int[] next = new int[ArrayUtil.oversize(1+count, RamUsageEstimator.NUM_BYTES_INT)];
+        final int[] next = new int[ArrayUtil.oversize(1+count, Integer.BYTES)];
         System.arraycopy(posLengths, 0, next, 0, count);
         posLengths = next;
       }
