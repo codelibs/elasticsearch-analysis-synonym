@@ -10,7 +10,8 @@ For more details, see [LUCENE-5252](https://issues.apache.org/jira/browse/LUCENE
 
 | Version   | Tested On ES  |
 |:---------:|:-------------:|
-| master    | 2.4.X         |
+| master    | 5.1.X         |
+| 5.0.0     | 5.0.2         |
 | 2.4.0     | 2.4.0         |
 | 2.3.0     | 2.3.1         |
 | 2.2.0     | 2.2.2         |
@@ -25,6 +26,12 @@ Please file an [issue](https://github.com/codelibs/elasticsearch-analysis-synony
 (Japanese forum is [here](https://github.com/codelibs/codelibs-ja-forum "here").)
 
 ## Installation
+
+### For 5.x
+
+    $ $ES_HOME/bin/elasticsearch-plugin install org.codelibs:elasticsearch-analysis-synonym:5.0.0
+
+### For 2.x
 
     $ $ES_HOME/bin/plugin install org.codelibs/elasticsearch-analysis-synonym/2.4.0
 
