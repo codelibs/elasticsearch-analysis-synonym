@@ -16,6 +16,7 @@ import org.elasticsearch.client.Client;
 import org.elasticsearch.cluster.service.ClusterService;
 import org.elasticsearch.common.component.LifecycleComponent;
 import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.common.xcontent.NamedXContentRegistry;
 import org.elasticsearch.env.Environment;
 import org.elasticsearch.index.IndexSettings;
 import org.elasticsearch.index.analysis.AnalysisRegistry;
@@ -40,7 +41,8 @@ public class SynonymPlugin extends Plugin implements AnalysisPlugin {
 
     @Override
     public Collection<Object> createComponents(Client client, ClusterService clusterService, ThreadPool threadPool,
-            ResourceWatcherService resourceWatcherService, ScriptService scriptService, SearchRequestParsers searchRequestParsers) {
+            ResourceWatcherService resourceWatcherService, ScriptService scriptService,
+            SearchRequestParsers searchRequestParsers, NamedXContentRegistry xContentRegistry) {
         Collection<Object> components = new ArrayList<>();
         components.add(pluginComponent);
         return components;
