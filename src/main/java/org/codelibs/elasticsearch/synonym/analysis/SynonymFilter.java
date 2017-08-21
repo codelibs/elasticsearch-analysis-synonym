@@ -42,12 +42,12 @@ import org.apache.lucene.util.fst.FST;
  * This token stream cannot properly handle position
  * increments != 1, ie, you should place this filter before
  * filtering out stop words.
- * 
+ *
  * <p>Note that with the current implementation, parsing is
  * greedy, so whenever multiple parses would apply, the rule
  * starting the earliest and parsing the most tokens wins.
  * For example if you have these rules:
- *      
+ *
  * <pre>
  *   a -&gt; x
  *   a b -&gt; y
@@ -83,7 +83,7 @@ import org.apache.lucene.util.fst.FST;
  * used for parsing.  Subsequent tokens simply pass through
  * and are not parsed.  A future improvement would be to
  * allow these tokens to also be matched.</p>
- */ 
+ */
 
 // TODO: maybe we should resolve token -> wordID then run
 // FST on wordIDs, for better perf?
@@ -149,7 +149,7 @@ public final class SynonymFilter extends TokenFilter {
     boolean consumed = true;
     int startOffset;
     int endOffset;
-    
+
     public void reset() {
       state = null;
       consumed = true;
@@ -205,7 +205,7 @@ public final class SynonymFilter extends TokenFilter {
       return lastPosLength;
     }
 
-    public void add(char[] output, int offset, int len, int endOffset, int posLength) {
+    public void add(final char[] output, final int offset, final int len, final int endOffset, final int posLength) {
       if (count == outputs.length) {
         outputs = Arrays.copyOf(outputs, ArrayUtil.oversize(1+count, RamUsageEstimator.NUM_BYTES_OBJECT_REF));
       }
@@ -264,7 +264,7 @@ public final class SynonymFilter extends TokenFilter {
    *                   Note, if you set this to true, it's your responsibility to lowercase
    *                   the input entries when you create the {@link SynonymMap}
    */
-  public SynonymFilter(TokenStream input, SynonymLoader synonymLoader, boolean ignoreCase) {
+  public SynonymFilter(final TokenStream input, final SynonymLoader synonymLoader, final boolean ignoreCase) {
     super(input);
     if (synonymLoader != null) {
         if (synonymLoader.isReloadable()) {
@@ -351,7 +351,7 @@ public final class SynonymFilter extends TokenFilter {
 
     byToken:
     while(true) {
-      
+
       // Pull next token's chars:
       final char[] buffer;
       final int bufferLen;
@@ -469,7 +469,7 @@ public final class SynonymFilter extends TokenFilter {
   }
 
   // Interleaves all output tokens onto the futureOutputs:
-  private void addOutput(BytesRef bytes, int matchInputLength, int matchEndOffset) {
+  private void addOutput(final BytesRef bytes, final int matchInputLength, final int matchEndOffset) {
     bytesReader.reset(bytes.bytes, bytes.offset, bytes.length);
 
     final int code = bytesReader.readVInt();
@@ -550,7 +550,7 @@ public final class SynonymFilter extends TokenFilter {
       // First play back any buffered future inputs/outputs
       // w/o running parsing again:
       while (inputSkipCount != 0) {
-        
+
         // At each position, we first output the original
         // token
 
@@ -558,7 +558,7 @@ public final class SynonymFilter extends TokenFilter {
         // both input & outputs?
         final PendingInput input = futureInputs[nextRead];
         final PendingOutputs outputs = futureOutputs[nextRead];
-        
+
         //System.out.println("  cycle nextRead=" + nextRead + " nextWrite=" + nextWrite + " inputSkipCount="+ inputSkipCount + " input.keepOrig=" + input.keepOrig + " input.consumed=" + input.consumed + " input.state=" + input.state);
 
         if (!input.consumed && (input.keepOrig || !input.matched)) {
@@ -656,16 +656,16 @@ public final class SynonymFilter extends TokenFilter {
     // may not consume all input tokens (or we might hit an
     // exception), in which case we have leftover state
     // here:
-    for (PendingInput input : futureInputs) {
+    for (final PendingInput input : futureInputs) {
       input.reset();
     }
-    for (PendingOutputs output : futureOutputs) {
+    for (final PendingOutputs output : futureOutputs) {
       output.reset();
     }
 
     if (synonymLoader != null && synonymLoader.isUpdate(lastModified)) {
         lastModified = synonymLoader.getLastModified();
-        SynonymMap map = synonymLoader.getSynonymMap();
+        final SynonymMap map = synonymLoader.getSynonymMap();
         if (map != null) {
             synonyms = map;
             fst = synonyms.fst;
@@ -673,7 +673,7 @@ public final class SynonymFilter extends TokenFilter {
                 throw new IllegalArgumentException("fst must be non-null");
             }
             fstReader = fst.getBytesReader();
-            scratchArc = new FST.Arc<BytesRef>();
+            scratchArc = new FST.Arc<>();
             clearAttributes();
         }
     }

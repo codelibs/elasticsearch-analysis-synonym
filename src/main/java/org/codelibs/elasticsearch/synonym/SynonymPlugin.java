@@ -31,7 +31,7 @@ import org.elasticsearch.watcher.ResourceWatcherService;
 
 public class SynonymPlugin extends Plugin implements AnalysisPlugin {
 
-    private PluginComponent pluginComponent = new PluginComponent();
+    private final PluginComponent pluginComponent = new PluginComponent();
 
     @Override
     public Collection<Class<? extends LifecycleComponent>> getGuiceServiceClasses() {
@@ -39,21 +39,21 @@ public class SynonymPlugin extends Plugin implements AnalysisPlugin {
     }
 
     @Override
-    public Collection<Object> createComponents(Client client, ClusterService clusterService, ThreadPool threadPool,
-            ResourceWatcherService resourceWatcherService, ScriptService scriptService,
-            NamedXContentRegistry xContentRegistry) {
-        Collection<Object> components = new ArrayList<>();
+    public Collection<Object> createComponents(final Client client, final ClusterService clusterService, final ThreadPool threadPool,
+            final ResourceWatcherService resourceWatcherService, final ScriptService scriptService,
+            final NamedXContentRegistry xContentRegistry) {
+        final Collection<Object> components = new ArrayList<>();
         components.add(pluginComponent);
         return components;
     }
 
     @Override
     public Map<String, AnalysisProvider<TokenFilterFactory>> getTokenFilters() {
-        Map<String, AnalysisProvider<TokenFilterFactory>> extra = new HashMap<>();
+        final Map<String, AnalysisProvider<TokenFilterFactory>> extra = new HashMap<>();
         extra.put("synonym_filter", new AnalysisProvider<TokenFilterFactory>() {
 
             @Override
-            public TokenFilterFactory get(IndexSettings indexSettings, Environment environment, String name, Settings settings)
+            public TokenFilterFactory get(final IndexSettings indexSettings, final Environment environment, final String name, final Settings settings)
                     throws IOException {
                 return new SynonymTokenFilterFactory(indexSettings, environment, name, settings, pluginComponent.getAnalysisRegistry());
             }
@@ -79,7 +79,7 @@ public class SynonymPlugin extends Plugin implements AnalysisPlugin {
             return analysisRegistry;
         }
 
-        public void setAnalysisRegistry(AnalysisRegistry analysisRegistry) {
+        public void setAnalysisRegistry(final AnalysisRegistry analysisRegistry) {
             this.analysisRegistry = analysisRegistry;
         }
 

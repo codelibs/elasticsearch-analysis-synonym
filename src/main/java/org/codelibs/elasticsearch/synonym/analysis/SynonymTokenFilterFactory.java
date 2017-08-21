@@ -21,14 +21,14 @@ public class SynonymTokenFilterFactory extends AbstractTokenFilterFactory {
 
     private SynonymLoader synonymLoader = null;
 
-    public SynonymTokenFilterFactory(IndexSettings indexSettings, Environment environment, String name, Settings settings,
-            AnalysisRegistry analysisRegistry) throws IOException {
+    public SynonymTokenFilterFactory(final IndexSettings indexSettings, final Environment environment, final String name, final Settings settings,
+            final AnalysisRegistry analysisRegistry) throws IOException {
         super(indexSettings, name, settings);
 
         this.ignoreCase = settings.getAsBoolean("ignore_case", false);
-        boolean expand = settings.getAsBoolean("expand", true);
+        final boolean expand = settings.getAsBoolean("expand", true);
 
-        String tokenizerName = settings.get("tokenizer", "whitespace");
+        final String tokenizerName = settings.get("tokenizer", "whitespace");
 
         AnalysisModule.AnalysisProvider<TokenizerFactory> tokenizerFactoryFactory = null;
         if (analysisRegistry != null) {
@@ -42,11 +42,11 @@ public class SynonymTokenFilterFactory extends AbstractTokenFilterFactory {
                 : tokenizerFactoryFactory.get(indexSettings, environment, tokenizerName, AnalysisRegistry
                         .getSettingsFromIndexSettings(indexSettings, AnalysisRegistry.INDEX_ANALYSIS_TOKENIZER + "." + tokenizerName));
 
-        Analyzer analyzer = new Analyzer() {
+        final Analyzer analyzer = new Analyzer() {
             @Override
-            protected TokenStreamComponents createComponents(String fieldName) {
-                Tokenizer tokenizer = tokenizerFactory == null ? new WhitespaceTokenizer() : tokenizerFactory.create();
-                TokenStream stream = ignoreCase ? new LowerCaseFilter(tokenizer) : tokenizer;
+            protected TokenStreamComponents createComponents(final String fieldName) {
+                final Tokenizer tokenizer = tokenizerFactory == null ? new WhitespaceTokenizer() : tokenizerFactory.create();
+                final TokenStream stream = ignoreCase ? new LowerCaseFilter(tokenizer) : tokenizer;
                 return new TokenStreamComponents(tokenizer, stream);
             }
         };
@@ -64,7 +64,7 @@ public class SynonymTokenFilterFactory extends AbstractTokenFilterFactory {
     }
 
     @Override
-    public TokenStream create(TokenStream tokenStream) {
+    public TokenStream create(final TokenStream tokenStream) {
         // fst is null means no synonyms
         return synonymLoader == null ? tokenStream : new SynonymFilter(tokenStream, synonymLoader, ignoreCase);
     }

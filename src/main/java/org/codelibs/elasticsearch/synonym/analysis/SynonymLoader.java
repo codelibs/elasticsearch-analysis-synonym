@@ -27,15 +27,15 @@ import org.elasticsearch.index.analysis.Analysis;
 public class SynonymLoader {
     private File reloadableFile = null;
 
-    private Analyzer analyzer;
+    private final Analyzer analyzer;
 
-    private Settings settings;
+    private final Settings settings;
 
-    private boolean expand;
+    private final boolean expand;
 
     private long reloadInterval = 0;
 
-    private Environment env;
+    private final Environment env;
 
     private volatile long lastModified;
 
@@ -43,7 +43,7 @@ public class SynonymLoader {
 
     private volatile SynonymMap synonymMap;
 
-    public SynonymLoader(Environment env, Settings settings, boolean expand, Analyzer analyzer) {
+    public SynonymLoader(final Environment env, final Settings settings, final boolean expand, final Analyzer analyzer) {
         this.env = env;
         this.settings = settings;
         this.expand = expand;
@@ -52,10 +52,10 @@ public class SynonymLoader {
         createSynonymMap(false);
     }
 
-    public boolean isUpdate(long time) {
+    public boolean isUpdate(final long time) {
         if (System.currentTimeMillis() - lastChecked > reloadInterval) {
             lastChecked = System.currentTimeMillis();
-            long timestamp = reloadableFile.lastModified();
+            final long timestamp = reloadableFile.lastModified();
             if (timestamp != time) {
                 synchronized (reloadableFile) {
                     if (timestamp != lastModified) {
@@ -77,7 +77,7 @@ public class SynonymLoader {
         return synonymMap;
     }
 
-    protected void createSynonymMap(boolean reload) {
+    protected void createSynonymMap(final boolean reload) {
         try (Reader rulesReader = getReader(reload)) {
             if (rulesReader instanceof FastStringReader && ((FastStringReader) rulesReader).length() == 0) {
                 synonymMap = null;
@@ -94,7 +94,7 @@ public class SynonymLoader {
                 ((SolrSynonymParser) parser).parse(rulesReader);
             }
 
-            SynonymMap localSynonymMap = parser.build();
+            final SynonymMap localSynonymMap = parser.build();
             if (localSynonymMap.fst == null) {
                 synonymMap = null;
                 return;
@@ -108,12 +108,12 @@ public class SynonymLoader {
                 lastModified = System.currentTimeMillis();
             }
 
-        } catch (Exception e) {
+        } catch (final Exception e) {
             throw new IllegalArgumentException("failed to build synonyms", e);
         }
     }
 
-    private Reader getReader(boolean reload) throws IOException {
+    private Reader getReader(final boolean reload) throws IOException {
         if (reload) {
             if (reloadableFile == null) {
                 throw new IllegalArgumentException("reloadableFile is null.");
@@ -123,29 +123,29 @@ public class SynonymLoader {
 
         Reader reader = null;
         if (settings.getAsArray("synonyms", null) != null) {
-            List<String> rules = Analysis.getWordList(env, settings, "synonyms");
-            StringBuilder sb = new StringBuilder();
-            for (String line : rules) {
+            final List<String> rules = Analysis.getWordList(env, settings, "synonyms");
+            final StringBuilder sb = new StringBuilder();
+            for (final String line : rules) {
                 sb.append(line).append(System.getProperty("line.separator"));
             }
             reader = new FastStringReader(sb.toString());
         } else if (settings.get("synonyms_path") != null) {
             if (settings.getAsBoolean("dynamic_reload", false)) {
-                String filePath = settings.get("synonyms_path", null);
+                final String filePath = settings.get("synonyms_path", null);
 
                 if (filePath == null) {
                     throw new IllegalArgumentException("synonyms_path is not found.");
                 }
 
-                Path path = env.configFile().resolve(filePath);
+                final Path path = env.configFile().resolve(filePath);
 
                 try {
-                    File file = path.toFile();
+                    final File file = path.toFile();
                     if (file.exists()) {
                         reloadableFile = file;
                     }
                     reader = FileSystemUtils.newBufferedReader(path.toUri().toURL(), StandardCharsets.UTF_8);
-                } catch (Exception e) {
+                } catch (final Exception e) {
                     throw new IllegalArgumentException("Failed to read " + filePath, e);
                 }
 
@@ -172,9 +172,9 @@ public class SynonymLoader {
     protected static Analyzer getAnalyzer(final boolean ignoreCase) {
         return new Analyzer() {
             @Override
-            protected TokenStreamComponents createComponents(String fieldName) {
-                Tokenizer tokenizer = new KeywordTokenizer();
-                TokenStream stream = ignoreCase ? new LowerCaseFilter(tokenizer) : tokenizer;
+            protected TokenStreamComponents createComponents(final String fieldName) {
+                final Tokenizer tokenizer = new KeywordTokenizer();
+                final TokenStream stream = ignoreCase ? new LowerCaseFilter(tokenizer) : tokenizer;
                 return new TokenStreamComponents(tokenizer, stream);
             }
         };
