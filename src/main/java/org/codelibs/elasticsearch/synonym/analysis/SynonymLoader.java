@@ -1,5 +1,6 @@
 package org.codelibs.elasticsearch.synonym.analysis;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -18,7 +19,6 @@ import org.apache.lucene.analysis.synonym.SolrSynonymParser;
 import org.apache.lucene.analysis.synonym.SynonymMap;
 import org.apache.lucene.analysis.synonym.WordnetSynonymParser;
 import org.elasticsearch.common.io.FastStringReader;
-import org.elasticsearch.common.io.FileSystemUtils;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.env.Environment;
@@ -144,7 +144,7 @@ public class SynonymLoader {
                     if (file.exists()) {
                         reloadableFile = file;
                     }
-                    reader = FileSystemUtils.newBufferedReader(path.toUri().toURL(), StandardCharsets.UTF_8);
+                    reader = new BufferedReader(new InputStreamReader(path.toUri().toURL().openStream(), StandardCharsets.UTF_8));
                 } catch (final Exception e) {
                     throw new IllegalArgumentException("Failed to read " + filePath, e);
                 }

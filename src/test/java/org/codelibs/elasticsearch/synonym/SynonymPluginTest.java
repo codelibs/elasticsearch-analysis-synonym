@@ -92,7 +92,7 @@ public class SynonymPluginTest {
                 + "\"2gram_synonym\":{\"type\":\"ngram_synonym\",\"n\":\"2\",\"synonyms\":[\"あ,かき,さしす,たちつて,なにぬねの\",\"東京,とうきょう\"]}"
                 + "},"//
                 + "\"filter\":{"//
-                + "\"synonym\":{\"type\":\"synonym\",\"synonyms\":[\"あ,かき,さしす,たちつて,なにぬねの\",\"東京,とうきょう\"]}"
+                + "\"synonym\":{\"type\":\"synonym\",\"synonyms\":[\"かき,さしす,たちつて,なにぬねの\",\"東京,とうきょう\"]}"
                 + "},"//
                 + "\"analyzer\":{"
                 + "\"2gram_analyzer\":{\"type\":\"custom\",\"tokenizer\":\"2gram\",\"filter\":[\"synonym\"]},"
@@ -111,19 +111,18 @@ public class SynonymPluginTest {
 
                 // id
                 .startObject("id")//
-                .field("type", "string")//
-                .field("index", "not_analyzed")//
+                .field("type", "keyword")//
                 .endObject()//
 
                 // msg1
                 .startObject("msg1")//
-                .field("type", "string")//
+                .field("type", "text")//
                 .field("analyzer", "2gram_synonym_analyzer")//
                 .endObject()//
 
                 // msg2
                 .startObject("msg2")//
-                .field("type", "string")//
+                .field("type", "text")//
                 .field("analyzer", "2gram_analyzer")//
                 .endObject()//
 
@@ -173,11 +172,13 @@ public class SynonymPluginTest {
 
     @Test
     public void test_synonymPath() throws Exception {
-        synonymFiles = new File[numOfNode];
+        synonymFiles = new File[numOfNode * 2];
         for (int i = 0; i < numOfNode; i++) {
-            String confPath = runner.getNode(i).settings().get("path.conf");
-            synonymFiles[i] = new File(confPath, "synonym.txt");
-            updateDictionary(synonymFiles[i], "あ,かき,さしす,たちつて,なにぬねの\n東京,とうきょう");
+            String homePath = runner.getNode(i).settings().get("path.home");
+            synonymFiles[2 * i] = new File(new File(homePath, "config"), "1_synonym.txt");
+            updateDictionary(synonymFiles[2 * i], "あ,かき,さしす,たちつて,なにぬねの\n東京,とうきょう");
+            synonymFiles[2 * i + 1] = new File(new File(homePath, "config"), "2_synonym.txt");
+            updateDictionary(synonymFiles[2 * i + 1], "かき,さしす,たちつて,なにぬねの\n東京,とうきょう");
         }
 
         runner.ensureYellow();
@@ -188,10 +189,10 @@ public class SynonymPluginTest {
         final String indexSettings = "{\"index\":{\"analysis\":{"
                 + "\"tokenizer\":{"//
                 + "\"2gram\":{\"type\":\"nGram\",\"min_gram\":\"2\",\"max_gram\":\"2\",\"token_chars\":[\"letter\",\"digit\"]},"
-                + "\"2gram_synonym\":{\"type\":\"ngram_synonym\",\"n\":\"2\",\"synonyms_path\":\"synonym.txt\"}"
+                + "\"2gram_synonym\":{\"type\":\"ngram_synonym\",\"n\":\"2\",\"synonyms_path\":\"1_synonym.txt\"}"
                 + "},"//
                 + "\"filter\":{"//
-                + "\"synonym\":{\"type\":\"synonym\",\"synonyms_path\":\"synonym.txt\"}"
+                + "\"synonym\":{\"type\":\"synonym\",\"synonyms_path\":\"2_synonym.txt\"}"
                 + "},"//
                 + "\"analyzer\":{"
                 + "\"2gram_analyzer\":{\"type\":\"custom\",\"tokenizer\":\"2gram\",\"filter\":[\"synonym\"]},"
@@ -210,19 +211,18 @@ public class SynonymPluginTest {
 
                 // id
                 .startObject("id")//
-                .field("type", "string")//
-                .field("index", "not_analyzed")//
+                .field("type", "keyword")//
                 .endObject()//
 
                 // msg1
                 .startObject("msg1")//
-                .field("type", "string")//
+                .field("type", "text")//
                 .field("analyzer", "2gram_synonym_analyzer")//
                 .endObject()//
 
                 // msg2
                 .startObject("msg2")//
-                .field("type", "string")//
+                .field("type", "text")//
                 .field("analyzer", "2gram_analyzer")//
                 .endObject()//
 
@@ -274,8 +274,8 @@ public class SynonymPluginTest {
     public void test_synonymPath_empty() throws Exception {
         synonymFiles = new File[numOfNode];
         for (int i = 0; i < numOfNode; i++) {
-            String confPath = runner.getNode(i).settings().get("path.conf");
-            synonymFiles[i] = new File(confPath, "synonym.txt");
+            String homePath = runner.getNode(i).settings().get("path.home");
+            synonymFiles[i] = new File(new File(homePath, "config"), "synonym.txt");
             updateDictionary(synonymFiles[i], "");
         }
 
@@ -309,19 +309,18 @@ public class SynonymPluginTest {
 
                 // id
                 .startObject("id")//
-                .field("type", "string")//
-                .field("index", "not_analyzed")//
+                .field("type", "keyword")//
                 .endObject()//
 
                 // msg1
                 .startObject("msg1")//
-                .field("type", "string")//
+                .field("type", "text")//
                 .field("analyzer", "2gram_synonym_analyzer")//
                 .endObject()//
 
                 // msg2
                 .startObject("msg2")//
-                .field("type", "string")//
+                .field("type", "text")//
                 .field("analyzer", "2gram_analyzer")//
                 .endObject()//
 
@@ -373,8 +372,8 @@ public class SynonymPluginTest {
     public void test_synonymPath_update() throws Exception {
         synonymFiles = new File[numOfNode];
         for (int i = 0; i < numOfNode; i++) {
-            String confPath = runner.getNode(i).settings().get("path.conf");
-            synonymFiles[i] = new File(confPath, "synonym.txt");
+            String homePath = runner.getNode(i).settings().get("path.home");
+            synonymFiles[i] = new File(new File(homePath, "config"), "synonym.txt");
             updateDictionary(synonymFiles[i], "東京,とうきょう");
         }
 
@@ -409,19 +408,18 @@ public class SynonymPluginTest {
 
                 // id
                 .startObject("id")//
-                .field("type", "string")//
-                .field("index", "not_analyzed")//
+                .field("type", "keyword")//
                 .endObject()//
 
                 // msg1
                 .startObject("msg1")//
-                .field("type", "string")//
+                .field("type", "text")//
                 .field("analyzer", "2gram_synonym_analyzer")//
                 .endObject()//
 
                 // msg2
                 .startObject("msg2")//
-                .field("type", "string")//
+                .field("type", "text")//
                 .field("analyzer", "2gram_analyzer")//
                 .endObject()//
 
@@ -441,12 +439,13 @@ public class SynonymPluginTest {
             assertDocCount(0, index, type, "msg1", "TOKYO");
 
             assertDocCount(1, index, type, "msg2", "東京");
-            assertDocCount(0, index, type, "msg2", "とうきょう");
+            assertDocCount(1, index, type, "msg2", "とうきょう");
             assertDocCount(0, index, type, "msg2", "TOKYO");
 
             try (CurlResponse response = Curl
                     .post(node, "/" + index + "/_analyze")
-                    .param("analyzer", "2gram_synonym_analyzer").body("東京")
+                    .header("Content-Type", "application/json")
+                    .body("{\"analyzer\":\"2gram_synonym_analyzer\",\"text\":\"東京\"}")
                     .execute()) {
                 @SuppressWarnings("unchecked")
                 List<Map<String, Object>> tokens = (List<Map<String, Object>>) response
@@ -474,12 +473,13 @@ public class SynonymPluginTest {
             assertDocCount(2, index, type, "msg1", "TOKYO");
 
             assertDocCount(2, index, type, "msg2", "東京");
-            assertDocCount(0, index, type, "msg2", "とうきょう");
+            assertDocCount(2, index, type, "msg2", "とうきょう");
             assertDocCount(0, index, type, "msg2", "TOKYO");
 
             try (CurlResponse response = Curl
                     .post(node, "/" + index + "/_analyze")
-                    .param("analyzer", "2gram_synonym_analyzer").body("東京")
+                    .header("Content-Type", "application/json")
+                    .body("{\"analyzer\":\"2gram_synonym_analyzer\",\"text\":\"東京\"}")
                     .execute()) {
                 @SuppressWarnings("unchecked")
                 List<Map<String, Object>> tokens = (List<Map<String, Object>>) response
@@ -495,8 +495,8 @@ public class SynonymPluginTest {
     public void test_synonymFilterPath_update() throws Exception {
         synonymFiles = new File[numOfNode];
         for (int i = 0; i < numOfNode; i++) {
-            String confPath = runner.getNode(i).settings().get("path.conf");
-            synonymFiles[i] = new File(confPath, "synonym.txt");
+            String homePath = runner.getNode(i).settings().get("path.home");
+            synonymFiles[i] = new File(new File(homePath, "config"), "synonym.txt");
             updateDictionary(synonymFiles[i], "東京,とうきょう\nああ,嗚呼");
         }
 
@@ -532,19 +532,18 @@ public class SynonymPluginTest {
 
                 // id
                 .startObject("id")//
-                .field("type", "string")//
-                .field("index", "not_analyzed")//
+                .field("type", "keyword")//
                 .endObject()//
 
                 // msg1
                 .startObject("msg1")//
-                .field("type", "string")//
+                .field("type", "text")//
                 .field("analyzer", "2gram_reload_analyzer")//
                 .endObject()//
 
                 // msg2
                 .startObject("msg2")//
-                .field("type", "string")//
+                .field("type", "text")//
                 .field("analyzer", "2gram_synonym_analyzer")//
                 .endObject()//
 
@@ -576,7 +575,8 @@ public class SynonymPluginTest {
 
             try (CurlResponse response = Curl
                     .post(node, "/" + index + "/_analyze")
-                    .param("analyzer", "2gram_reload_analyzer").body("東京")
+                    .header("Content-Type", "application/json")
+                    .body("{\"analyzer\":\"2gram_reload_analyzer\",\"text\":\"東京\"}")
                     .execute()) {
                 @SuppressWarnings("unchecked")
                 List<Map<String, Object>> tokens = (List<Map<String, Object>>) response
@@ -619,7 +619,8 @@ public class SynonymPluginTest {
 
             try (CurlResponse response = Curl
                     .post(node, "/" + index + "/_analyze")
-                    .param("analyzer", "2gram_reload_analyzer").body("東京")
+                    .header("Content-Type", "application/json")
+                    .body("{\"analyzer\":\"2gram_reload_analyzer\",\"text\":\"東京\"}")
                     .execute()) {
                 @SuppressWarnings("unchecked")
                 List<Map<String, Object>> tokens = (List<Map<String, Object>>) response
