@@ -22,6 +22,7 @@ import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.settings.Settings.Builder;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
+import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.node.Node;
 import org.elasticsearch.rest.RestStatus;
@@ -99,9 +100,7 @@ public class SynonymPluginTest {
                 + "\"2gram_synonym_analyzer\":{\"type\":\"custom\",\"tokenizer\":\"2gram_synonym\"}"
                 + "}"//
                 + "}}}";
-        runner.createIndex(index,
-                Settings.builder().loadFromSource(indexSettings)
-                        .build());
+        runner.createIndex(index, Settings.builder().loadFromSource(indexSettings, XContentType.JSON).build());
 
         // create a mapping
         final XContentBuilder mappingBuilder = XContentFactory.jsonBuilder()//
@@ -199,9 +198,7 @@ public class SynonymPluginTest {
                 + "\"2gram_synonym_analyzer\":{\"type\":\"custom\",\"tokenizer\":\"2gram_synonym\"}"
                 + "}"//
                 + "}}}";
-        runner.createIndex(index,
-                Settings.builder().loadFromSource(indexSettings)
-                        .build());
+        runner.createIndex(index, Settings.builder().loadFromSource(indexSettings, XContentType.JSON).build());
 
         // create a mapping
         final XContentBuilder mappingBuilder = XContentFactory.jsonBuilder()//
@@ -297,9 +294,7 @@ public class SynonymPluginTest {
                 + "\"2gram_synonym_analyzer\":{\"type\":\"custom\",\"tokenizer\":\"2gram_synonym\"}"
                 + "}"//
                 + "}}}";
-        runner.createIndex(index,
-                Settings.builder().loadFromSource(indexSettings)
-                        .build());
+        runner.createIndex(index, Settings.builder().loadFromSource(indexSettings, XContentType.JSON).build());
 
         // create a mapping
         final XContentBuilder mappingBuilder = XContentFactory.jsonBuilder()//
@@ -396,9 +391,7 @@ public class SynonymPluginTest {
                 + "\"2gram_synonym_analyzer\":{\"type\":\"custom\",\"tokenizer\":\"2gram_synonym\"}"
                 + "}"//
                 + "}}}";
-        runner.createIndex(index,
-                Settings.builder().loadFromSource(indexSettings)
-                        .build());
+        runner.createIndex(index, Settings.builder().loadFromSource(indexSettings, XContentType.JSON).build());
 
         // create a mapping
         final XContentBuilder mappingBuilder = XContentFactory.jsonBuilder()//
@@ -520,9 +513,7 @@ public class SynonymPluginTest {
                 + "\"2gram_reload_analyzer\":{\"type\":\"custom\",\"tokenizer\":\"2gram\",\"filter\":[\"synonym_reload\"]}"
                 + "}"//
                 + "}}}";
-        runner.createIndex(index,
-                Settings.builder().loadFromSource(indexSettings)
-                        .build());
+        runner.createIndex(index, Settings.builder().loadFromSource(indexSettings, XContentType.JSON).build());
 
         // create a mapping
         final XContentBuilder mappingBuilder = XContentFactory.jsonBuilder()//
