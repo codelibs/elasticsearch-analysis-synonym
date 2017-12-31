@@ -30,7 +30,7 @@ public final class NGramSynonymTokenizerFactory extends AbstractTokenizerFactory
 
         synonymLoader = new SynonymLoader(env, settings, expand, SynonymLoader.getAnalyzer(ignoreCase));
         if (synonymLoader.getSynonymMap() == null) {
-            if (settings.getAsArray("synonyms", null) != null) {
+            if (settings.getAsList("synonyms", null) != null) {
                 logger.warn("synonyms values are empty.");
             } else if (settings.get("synonyms_path") != null) {
                 logger.warn("synonyms_path[{}] is empty.", settings.get("synonyms_path"));

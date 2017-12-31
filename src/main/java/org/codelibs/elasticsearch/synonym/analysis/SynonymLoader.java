@@ -122,7 +122,7 @@ public class SynonymLoader {
         }
 
         Reader reader = null;
-        if (settings.getAsArray("synonyms", null) != null) {
+        if (settings.getAsList("synonyms", null) != null) {
             final List<String> rules = Analysis.getWordList(env, settings, "synonyms");
             final StringBuilder sb = new StringBuilder();
             for (final String line : rules) {

@@ -53,7 +53,7 @@ public class SynonymTokenFilterFactory extends AbstractTokenFilterFactory {
 
         synonymLoader = new SynonymLoader(environment, settings, expand, analyzer);
         if (synonymLoader.getSynonymMap() == null) {
-            if (settings.getAsArray("synonyms", null) != null) {
+            if (settings.getAsList("synonyms", null) != null) {
                 logger.warn("synonyms values are empty.");
             } else if (settings.get("synonyms_path") != null) {
                 logger.warn("synonyms_path[{}] is empty.", settings.get("synonyms_path"));
