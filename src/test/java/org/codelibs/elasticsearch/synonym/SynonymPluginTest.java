@@ -13,9 +13,9 @@ import java.io.UnsupportedEncodingException;
 import java.util.List;
 import java.util.Map;
 
+import org.codelibs.curl.CurlResponse;
 import org.codelibs.elasticsearch.runner.ElasticsearchClusterRunner;
-import org.codelibs.elasticsearch.runner.net.Curl;
-import org.codelibs.elasticsearch.runner.net.CurlResponse;
+import org.codelibs.elasticsearch.runner.net.EcrCurl;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.common.settings.Settings;
@@ -435,14 +435,14 @@ public class SynonymPluginTest {
             assertDocCount(1, index, type, "msg2", "とうきょう");
             assertDocCount(0, index, type, "msg2", "TOKYO");
 
-            try (CurlResponse response = Curl
+            try (CurlResponse response = EcrCurl
                     .post(node, "/" + index + "/_analyze")
                     .header("Content-Type", "application/json")
                     .body("{\"analyzer\":\"2gram_synonym_analyzer\",\"text\":\"東京\"}")
                     .execute()) {
                 @SuppressWarnings("unchecked")
                 List<Map<String, Object>> tokens = (List<Map<String, Object>>) response
-                        .getContentAsMap().get("tokens");
+                        .getContent(EcrCurl.jsonParser).get("tokens");
                 String token = tokens.get(1).get("token").toString();
                 assertEquals("とうきょう", token);
             }
@@ -469,14 +469,14 @@ public class SynonymPluginTest {
             assertDocCount(2, index, type, "msg2", "とうきょう");
             assertDocCount(0, index, type, "msg2", "TOKYO");
 
-            try (CurlResponse response = Curl
+            try (CurlResponse response = EcrCurl
                     .post(node, "/" + index + "/_analyze")
                     .header("Content-Type", "application/json")
                     .body("{\"analyzer\":\"2gram_synonym_analyzer\",\"text\":\"東京\"}")
                     .execute()) {
                 @SuppressWarnings("unchecked")
                 List<Map<String, Object>> tokens = (List<Map<String, Object>>) response
-                        .getContentAsMap().get("tokens");
+                        .getContent(EcrCurl.jsonParser).get("tokens");
                 String token = tokens.get(1).get("token").toString();
                 assertEquals("tokyo", token);
             }
@@ -564,14 +564,14 @@ public class SynonymPluginTest {
             assertDocCount(1, index, type, "msg1", "嗚呼");
             assertDocCount(0, index, type, "msg1", "あゝ");
 
-            try (CurlResponse response = Curl
+            try (CurlResponse response = EcrCurl
                     .post(node, "/" + index + "/_analyze")
                     .header("Content-Type", "application/json")
                     .body("{\"analyzer\":\"2gram_reload_analyzer\",\"text\":\"東京\"}")
                     .execute()) {
                 @SuppressWarnings("unchecked")
                 List<Map<String, Object>> tokens = (List<Map<String, Object>>) response
-                        .getContentAsMap().get("tokens");
+                        .getContent(EcrCurl.jsonParser).get("tokens");
                 assertEquals("東京", tokens.get(0).get("token").toString());
                 assertEquals("とう", tokens.get(1).get("token").toString());
                 assertEquals("うき", tokens.get(2).get("token").toString());
@@ -608,14 +608,14 @@ public class SynonymPluginTest {
             assertDocCount(1, index, type, "msg1", "嗚呼");
             assertDocCount(2, index, type, "msg1", "あゝ");
 
-            try (CurlResponse response = Curl
+            try (CurlResponse response = EcrCurl
                     .post(node, "/" + index + "/_analyze")
                     .header("Content-Type", "application/json")
                     .body("{\"analyzer\":\"2gram_reload_analyzer\",\"text\":\"東京\"}")
                     .execute()) {
                 @SuppressWarnings("unchecked")
                 List<Map<String, Object>> tokens = (List<Map<String, Object>>) response
-                        .getContentAsMap().get("tokens");
+                        .getContent(EcrCurl.jsonParser).get("tokens");
                 assertEquals("東京", tokens.get(0).get("token").toString());
                 assertEquals("to", tokens.get(1).get("token").toString());
                 assertEquals("ok", tokens.get(2).get("token").toString());

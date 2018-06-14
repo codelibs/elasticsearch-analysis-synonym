@@ -6,6 +6,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.List;
@@ -18,7 +19,6 @@ import org.apache.lucene.analysis.core.LowerCaseFilter;
 import org.apache.lucene.analysis.synonym.SolrSynonymParser;
 import org.apache.lucene.analysis.synonym.SynonymMap;
 import org.apache.lucene.analysis.synonym.WordnetSynonymParser;
-import org.elasticsearch.common.io.FastStringReader;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.env.Environment;
@@ -79,7 +79,7 @@ public class SynonymLoader {
 
     protected void createSynonymMap(final boolean reload) {
         try (Reader rulesReader = getReader(reload)) {
-            if (rulesReader instanceof FastStringReader && ((FastStringReader) rulesReader).length() == 0) {
+            if (rulesReader instanceof StringReader && ((StringReader) rulesReader).toString().length() == 0) {
                 synonymMap = null;
                 return;
             }
@@ -128,7 +128,7 @@ public class SynonymLoader {
             for (final String line : rules) {
                 sb.append(line).append(System.getProperty("line.separator"));
             }
-            reader = new FastStringReader(sb.toString());
+            reader = new StringReader(sb.toString());
         } else if (settings.get("synonyms_path") != null) {
             if (settings.getAsBoolean("dynamic_reload", false)) {
                 final String filePath = settings.get("synonyms_path", null);
@@ -155,7 +155,7 @@ public class SynonymLoader {
                 reader = Analysis.getReaderFromFile(env, settings, "synonyms_path");
             }
         } else {
-            reader = new FastStringReader("");
+            reader = new StringReader("");
         }
 
         return reader;
